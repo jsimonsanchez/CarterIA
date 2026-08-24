@@ -11,6 +11,13 @@ node_modules
 dist
 dist-ssr
 *.local
+public/test-fixture.xlsx
+
+# Vercel / secretos locales (la TWELVE_DATA_API_KEY va aquí en desarrollo)
+.env
+.env.*
+!.env.example
+.vercel
 
 # Editor directories and files
 .vscode/*
