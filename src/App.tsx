@@ -49,7 +49,7 @@ function App() {
           Cartera
         </button>
         <button className={`tab ${tab === 'realizado' ? 'active' : ''}`} onClick={() => setTab('realizado')}>
-          Ganancias realizadas
+          Posiciones cerradas
         </button>
       </nav>
 
