@@ -37,6 +37,28 @@ export interface PriceCacheEntry {
   fetchedAt: string // ISO 8601
 }
 
+/**
+ * Una posición cerrada (round-trip completo de compra→venta), tal cual la
+ * reporta la hoja "Closed Positions" del extracto de XTB — que ya trae la
+ * plusvalía realizada calculada en EUR, sin tener que reconstruirla a mano
+ * emparejando compras y ventas de "Cash Operations".
+ */
+export interface ClosedTrade {
+  /** Hash estable (positionId + fecha de cierre + cantidad + precio de cierre), usado como PK para deduplicar reimportaciones. */
+  id: string
+  symbol: string
+  name?: string
+  quantity: number
+  openDate: string // ISO 8601
+  closeDate: string // ISO 8601
+  openPrice: number
+  closePrice: number
+  purchaseValueEur: number
+  saleValueEur: number
+  realizedPnlEur: number
+  positionId: string
+}
+
 /** Tabla de equivalencias manual entre el símbolo de XTB y los tickers de cada proveedor de precios. */
 export interface SymbolMapping {
   /** Símbolo tal cual aparece en el extracto de XTB (clave). */

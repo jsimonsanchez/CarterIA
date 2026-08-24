@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from 'react'
 import './App.css'
 import { ImportPanel } from './components/ImportPanel'
 import { PositionsTable } from './components/PositionsTable'
+import { RealizedGainsPanel } from './components/RealizedGainsPanel'
 import { ReportsPanel } from './components/ReportsPanel'
 import { SummaryCards } from './components/SummaryCards'
 import { refreshPrices, usePortfolioRows } from './hooks/usePortfolioRows'
@@ -9,10 +10,13 @@ import { refreshPrices, usePortfolioRows } from './hooks/usePortfolioRows'
 // recharts es pesado (~400 kB) y solo hace falta cuando hay datos que graficar.
 const AllocationChart = lazy(() => import('./components/AllocationChart').then((m) => ({ default: m.AllocationChart })))
 
+type Tab = 'cartera' | 'realizado'
+
 function App() {
   const rows = usePortfolioRows()
   const [refreshing, setRefreshing] = useState(false)
   const [refreshError, setRefreshError] = useState<string | null>(null)
+  const [tab, setTab] = useState<Tab>('cartera')
 
   async function handleRefresh() {
     setRefreshing(true)
@@ -39,16 +43,30 @@ function App() {
       {refreshError && <p className="warning-text">{refreshError}</p>}
 
       <ImportPanel />
-      <SummaryCards rows={rows} />
 
-      <div className="main-grid">
-        <PositionsTable rows={rows} />
-        <Suspense fallback={null}>
-          <AllocationChart rows={rows} />
-        </Suspense>
-      </div>
+      <nav className="tabs">
+        <button className={`tab ${tab === 'cartera' ? 'active' : ''}`} onClick={() => setTab('cartera')}>
+          Cartera
+        </button>
+        <button className={`tab ${tab === 'realizado' ? 'active' : ''}`} onClick={() => setTab('realizado')}>
+          Ganancias realizadas
+        </button>
+      </nav>
 
-      <ReportsPanel />
+      {tab === 'cartera' ? (
+        <>
+          <SummaryCards rows={rows} />
+          <div className="main-grid">
+            <PositionsTable rows={rows} />
+            <Suspense fallback={null}>
+              <AllocationChart rows={rows} />
+            </Suspense>
+          </div>
+          <ReportsPanel />
+        </>
+      ) : (
+        <RealizedGainsPanel />
+      )}
     </div>
   )
 }

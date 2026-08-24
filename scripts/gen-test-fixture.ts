@@ -20,6 +20,28 @@ async function main() {
 
   sheet.addRow(['Total', null, null, null, null, 3707.6])
 
+  const closed = wb.addWorksheet('Closed Positions')
+  closed.addRow(['Account number', 12345678])
+  closed.addRow(['Closed Positions'])
+  closed.addRow(['Date from (UTC)', new Date('2024-01-01')])
+  closed.addRow(['Date to (UTC)', new Date('2026-08-24')])
+  closed.addRow([
+    'Instrument', 'Ticker', 'Category', 'Type', 'Volume', 'Open Price', 'Open Time (UTC)',
+    'Close Price', 'Close Time (UTC)', 'Product', 'Profit/Loss', 'Gross Profit', 'Purchase Value',
+    'Sale Value', 'Stop Loss', 'Take Profit', 'Commission', 'Margin', 'Swap', 'Rollover',
+    'Open Conversion Rate', 'Close Conversion Rate', 'Close Origin', 'Position ID', 'Comment',
+  ])
+  closed.addRow([
+    'Microsoft', 'MSFT.US', 'STOCK', 'BUY', 5, 300, new Date('2024-11-01T10:00:00Z'),
+    350, new Date('2025-03-15T10:00:00Z'), 'My Trades', 250, 250, 1500, 1750, null, null, 0,
+    null, null, null, 1, 1, 'Android', 9001, null,
+  ])
+  closed.addRow([
+    'Tesla', 'TSLA.US', 'STOCK', 'BUY', 2, 200, new Date('2025-01-10T10:00:00Z'),
+    180, new Date('2025-04-01T10:00:00Z'), 'My Trades', -40, -40, 400, 360, null, null, 0,
+    null, null, null, 1, 1, 'Android', 9002, null,
+  ])
+
   await wb.xlsx.writeFile('public/test-fixture.xlsx')
   console.log('written public/test-fixture.xlsx')
 }

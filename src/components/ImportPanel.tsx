@@ -50,7 +50,8 @@ export function ImportPanel() {
       {status === 'done' && summary && (
         <div className="import-summary">
           <p>
-            {summary.imported} movimientos procesados, {summary.positions} posiciones abiertas
+            {summary.imported} movimientos procesados, {summary.positions} posiciones abiertas,{' '}
+            {summary.closedTrades} operaciones cerradas
             {summary.skipped > 0 && `, ${summary.skipped} filas omitidas`}.
           </p>
           {summary.warnings.length > 0 && (

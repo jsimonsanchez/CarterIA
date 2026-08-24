@@ -1,11 +1,12 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Position, PriceCacheEntry, SymbolMapping, Transaction } from '../domain/types'
+import type { ClosedTrade, Position, PriceCacheEntry, SymbolMapping, Transaction } from '../domain/types'
 
 export class CarteraDB extends Dexie {
   transactions!: EntityTable<Transaction, 'id'>
   positions!: EntityTable<Position, 'symbol'>
   priceCache!: EntityTable<PriceCacheEntry, 'symbol'>
   symbolMappings!: EntityTable<SymbolMapping, 'xtbSymbol'>
+  closedTrades!: EntityTable<ClosedTrade, 'id'>
 
   constructor() {
     super('cartera-tracker')
@@ -15,6 +16,7 @@ export class CarteraDB extends Dexie {
       positions: 'symbol',
       priceCache: 'symbol, fetchedAt',
       symbolMappings: 'xtbSymbol',
+      closedTrades: 'id, symbol, closeDate',
     })
   }
 }

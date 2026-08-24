@@ -8,23 +8,33 @@ export interface ImportSummary {
   skipped: number
   warnings: XtbImportWarning[]
   positions: number
+  closedTrades: number
   unresolvedSymbols: string[]
 }
 
 /**
- * Importa un extracto de XTB (.xlsx): parsea, persiste las transacciones
- * (upsert por id — reimportar el mismo extracto no duplica), recalcula
- * posiciones desde el histórico completo y da de alta el mapeo de símbolos
- * que falte.
+ * Importa un extracto de XTB (.xlsx): parsea "Cash Operations" y "Closed
+ * Positions", persiste (upsert por id — reimportar el mismo extracto no
+ * duplica), recalcula posiciones desde el histórico completo y da de alta
+ * el mapeo de símbolos que falte.
  */
 export async function importXtbFile(file: File): Promise<ImportSummary> {
   // exceljs es pesado (~1MB) y solo hace falta al importar — se carga bajo
   // demanda en vez de ir en el bundle inicial de la app.
-  const { parseXtbWorkbook } = await import('../import/xtbImporter')
+  const [{ parseXtbWorkbook }, { parseXtbClosedPositions }] = await Promise.all([
+    import('../import/xtbImporter'),
+    import('../import/xtbClosedPositions'),
+  ])
   const buffer = await file.arrayBuffer()
-  const result = await parseXtbWorkbook(buffer)
+  // Cada parser recibe su propia copia del buffer: no se puede garantizar
+  // que ambas lecturas concurrentes sean seguras sobre el mismo ArrayBuffer.
+  const [result, closedResult] = await Promise.all([
+    parseXtbWorkbook(buffer),
+    parseXtbClosedPositions(buffer.slice(0)),
+  ])
 
   await db.transactions.bulkPut(result.transactions)
+  await db.closedTrades.bulkPut(closedResult.trades)
 
   const allTransactions = await db.transactions.toArray()
   const positions = computePositions(allTransactions)
@@ -41,6 +51,7 @@ export async function importXtbFile(file: File): Promise<ImportSummary> {
     skipped: result.skipped,
     warnings: result.warnings,
     positions: positions.length,
+    closedTrades: closedResult.trades.length,
     unresolvedSymbols: unresolved,
   }
 }
