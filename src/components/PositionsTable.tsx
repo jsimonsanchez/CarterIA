@@ -3,25 +3,73 @@ import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { formatEur, formatPct } from '../utils/format'
 import { PositionDetail } from './PositionDetail'
 
+type SortKey = 'symbol' | 'quantity' | 'averageCost' | 'price' | 'value' | 'pnl' | 'pnlPct'
+type SortDir = 'asc' | 'desc'
+
+const COLUMNS: { key: SortKey; label: string }[] = [
+  { key: 'symbol', label: 'Símbolo' },
+  { key: 'quantity', label: 'Cantidad' },
+  { key: 'averageCost', label: 'Coste medio' },
+  { key: 'price', label: 'Precio actual' },
+  { key: 'value', label: 'Valor' },
+  { key: 'pnl', label: 'Plusvalía' },
+  { key: 'pnlPct', label: '% Plusvalía' },
+]
+
+function sortValue(row: PortfolioRow, key: SortKey): number | string {
+  switch (key) {
+    case 'symbol':
+      return row.symbol
+    case 'quantity':
+      return row.quantity
+    case 'averageCost':
+      return row.averageCost
+    case 'price':
+      return row.currentPriceNative ?? -Infinity
+    case 'value':
+      return row.marketValueEur ?? -Infinity
+    case 'pnl':
+      return row.unrealizedPnlEur ?? -Infinity
+    case 'pnlPct':
+      return row.unrealizedPnlPct ?? -Infinity
+  }
+}
+
 export function PositionsTable({ rows }: { rows: PortfolioRow[] }) {
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [sortKey, setSortKey] = useState<SortKey>('value')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
 
   if (rows.length === 0) {
     return <p className="empty-state">Sin posiciones — importa un extracto de XTB para empezar.</p>
   }
 
-  const sorted = [...rows].sort((a, b) => (b.marketValueEur ?? 0) - (a.marketValueEur ?? 0))
+  const sorted = [...rows].sort((a, b) => {
+    const va = sortValue(a, sortKey)
+    const vb = sortValue(b, sortKey)
+    const cmp = typeof va === 'string' && typeof vb === 'string' ? va.localeCompare(vb) : (va as number) - (vb as number)
+    return sortDir === 'asc' ? cmp : -cmp
+  })
+
+  function handleSort(key: SortKey) {
+    if (key === sortKey) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir('desc')
+    }
+  }
 
   return (
     <table className="positions-table">
       <thead>
         <tr>
-          <th>Símbolo</th>
-          <th>Cantidad</th>
-          <th>Coste medio</th>
-          <th>Precio actual</th>
-          <th>Valor</th>
-          <th>Plusvalía</th>
+          {COLUMNS.map((col) => (
+            <th key={col.key} className="sortable-th" onClick={() => handleSort(col.key)}>
+              {col.label}
+              {sortKey === col.key && <span className="sort-arrow">{sortDir === 'asc' ? ' ▲' : ' ▼'}</span>}
+            </th>
+          ))}
         </tr>
       </thead>
       <tbody>
@@ -67,20 +115,12 @@ function PositionRow({ row, expanded, onToggle }: { row: PortfolioRow; expanded:
           )}
         </td>
         <td>{row.marketValueEur !== undefined ? formatEur(row.marketValueEur) : '—'}</td>
-        <td className={tone}>
-          {row.unrealizedPnlEur !== undefined ? (
-            <>
-              {formatEur(row.unrealizedPnlEur)}
-              {row.unrealizedPnlPct !== undefined && <span className="pnl-pct"> ({formatPct(row.unrealizedPnlPct)})</span>}
-            </>
-          ) : (
-            '—'
-          )}
-        </td>
+        <td className={tone}>{row.unrealizedPnlEur !== undefined ? formatEur(row.unrealizedPnlEur) : '—'}</td>
+        <td className={tone}>{row.unrealizedPnlPct !== undefined ? formatPct(row.unrealizedPnlPct) : '—'}</td>
       </tr>
       {expanded && (
         <tr className="detail-row">
-          <td colSpan={6}>
+          <td colSpan={7}>
             <PositionDetail symbol={row.symbol} />
           </td>
         </tr>

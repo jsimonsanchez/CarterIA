@@ -195,6 +195,20 @@
   opacity: 0.8;
 }
 
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sortable-th:hover {
+  color: var(--text-h);
+}
+
+.sort-arrow {
+  font-size: 10px;
+}
+
 .detail-row td {
   padding: 0;
   border-bottom: 1px solid var(--border);
