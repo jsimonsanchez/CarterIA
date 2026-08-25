@@ -433,12 +433,37 @@
 }
 
 .position-detail h4 {
-  margin-bottom: 10px;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.position-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.annualized-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  cursor: help;
+}
+
+.annualized-badge.positive {
+  background: var(--positive-soft);
+  color: var(--positive);
+}
+
+.annualized-badge.negative {
+  background: var(--negative-soft);
+  color: var(--negative);
 }
 
 .transactions-table {

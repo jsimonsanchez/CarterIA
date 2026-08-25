@@ -3,6 +3,22 @@ export interface CashFlow {
   amount: number
 }
 
+/**
+ * Por debajo de esto no se anualiza — con pocos días de antigüedad, una
+ * variación pequeña se dispara a un % anualizado absurdo (+2% en 3 días
+ * serían cientos de % al año) y confunde más de lo que informa.
+ */
+export const MIN_DAYS_TO_ANNUALIZE = 30
+
+/** Rentabilidad anualizada (XIRR con respaldo Dietz), o undefined si hay menos de MIN_DAYS_TO_ANNUALIZE de antigüedad entre el primer y el último flujo. */
+export function annualizedReturn(flows: CashFlow[]): number | undefined {
+  if (flows.length < 2) return undefined
+  const dates = flows.map((f) => f.date.getTime())
+  const spanDays = (Math.max(...dates) - Math.min(...dates)) / (1000 * 60 * 60 * 24)
+  if (spanDays < MIN_DAYS_TO_ANNUALIZE) return undefined
+  return xirr(flows) ?? modifiedDietzAnnualized(flows)
+}
+
 function xnpv(rate: number, flows: CashFlow[], t0: number): number {
   return flows.reduce((acc, cf) => {
     const days = (cf.date.getTime() - t0) / (1000 * 60 * 60 * 24)
@@ -82,29 +98,40 @@ export function xirr(flows: CashFlow[]): number | undefined {
  * `xirr` no puede fallar por no converger — es el respaldo cuando `xirr`
  * devuelve undefined con conjuntos de flujos raros (aportaciones muy
  * concentradas, importes extremos, etc.). Asume valor inicial 0 (todo el
- * capital entró vía las propias aportaciones).
+ * capital entró vía los propios flujos — aportaciones, compras, ventas,
+ * dividendos... con el valor final como el flujo positivo en la fecha más
+ * reciente). Vale tanto para la cartera completa como para una sola
+ * posición: misma forma de flujos que espera `xirr`.
  */
 export function modifiedDietzAnnualized(flows: CashFlow[]): number | undefined {
-  const deposits = flows.filter((f) => f.amount < 0)
-  const final = flows.find((f) => f.amount > 0)
-  if (deposits.length === 0 || !final) return undefined
+  if (flows.length < 2) return undefined
 
-  const sorted = [...deposits].sort((a, b) => a.date.getTime() - b.date.getTime())
+  const sorted = [...flows].sort((a, b) => a.date.getTime() - b.date.getTime())
   const periodStart = sorted[0].date.getTime()
-  const periodEnd = final.date.getTime()
+  const periodEnd = sorted[sorted.length - 1].date.getTime()
   const totalDays = (periodEnd - periodStart) / (1000 * 60 * 60 * 24)
   if (totalDays < 1) return undefined
 
-  const totalDeposited = -deposits.reduce((acc, f) => acc + f.amount, 0)
-  const weightedDeposits = deposits.reduce((acc, f) => {
+  const gain = sorted.reduce((acc, f) => acc + f.amount, 0)
+  const weightedCapital = sorted.reduce((acc, f) => {
     const daysFromStart = (f.date.getTime() - periodStart) / (1000 * 60 * 60 * 24)
     const weight = (totalDays - daysFromStart) / totalDays
-    return acc + -f.amount * weight
+    return acc - f.amount * weight
   }, 0)
-  if (weightedDeposits <= 0) return undefined
+  if (weightedCapital <= 0) return undefined
 
-  const periodReturn = (final.amount - totalDeposited) / weightedDeposits
+  const periodReturn = gain / weightedCapital
   if (periodReturn <= -1) return undefined
 
   return Math.pow(1 + periodReturn, 365 / totalDays) - 1
+}
+
+/**
+ * Rentabilidad anualizada simple (CAGR) entre dos valores — para una
+ * operación cerrada con una sola compra y una sola venta no hace falta
+ * XIRR: es una fórmula directa, no puede fallar por no converger.
+ */
+export function cagr(startValue: number, endValue: number, days: number): number | undefined {
+  if (startValue <= 0 || days <= 0) return undefined
+  return Math.pow(endValue / startValue, 365 / days) - 1
 }

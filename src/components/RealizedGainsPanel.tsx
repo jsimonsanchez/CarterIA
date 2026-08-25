@@ -1,7 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Fragment, useState } from 'react'
 import { db } from '../db/db'
+import { cagr, MIN_DAYS_TO_ANNUALIZE } from '../domain/xirr'
 import { formatDate, formatEur, formatPct } from '../utils/format'
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24
 
 export function RealizedGainsPanel() {
   const trades = useLiveQuery(() => db.closedTrades.toArray(), [])
@@ -77,11 +80,20 @@ export function RealizedGainsPanel() {
                                 <th className="num">Venta</th>
                                 <th className="num">Plusvalía</th>
                                 <th className="num">% Plusvalía</th>
+                                <th className="num">% Anualizado</th>
                               </tr>
                             </thead>
                             <tbody>
                               {yearTrades.map((t) => {
                                 const pct = t.purchaseValueEur > 0 ? (t.realizedPnlEur / t.purchaseValueEur) * 100 : undefined
+                                const heldDays = (new Date(t.closeDate).getTime() - new Date(t.openDate).getTime()) / MS_PER_DAY
+                                const annualizedPct =
+                                  heldDays >= MIN_DAYS_TO_ANNUALIZE
+                                    ? (() => {
+                                        const rate = cagr(t.purchaseValueEur, t.saleValueEur, heldDays)
+                                        return rate !== undefined ? rate * 100 : undefined
+                                      })()
+                                    : undefined
                                 return (
                                   <tr key={t.id}>
                                     <td>{formatDate(t.closeDate)}</td>
@@ -94,6 +106,12 @@ export function RealizedGainsPanel() {
                                     </td>
                                     <td className={`num ${t.realizedPnlEur >= 0 ? 'positive' : 'negative'}`}>
                                       {pct !== undefined ? formatPct(pct) : '—'}
+                                    </td>
+                                    <td
+                                      className={`num ${annualizedPct !== undefined ? (annualizedPct >= 0 ? 'positive' : 'negative') : ''}`}
+                                      title={annualizedPct === undefined ? `Menos de ${MIN_DAYS_TO_ANNUALIZE} días en cartera — no se anualiza` : undefined}
+                                    >
+                                      {annualizedPct !== undefined ? formatPct(annualizedPct) : '—'}
                                     </td>
                                   </tr>
                                 )

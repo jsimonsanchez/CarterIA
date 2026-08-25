@@ -159,7 +159,7 @@ function PositionRow({ row, expanded, onToggle }: { row: PortfolioRow; expanded:
       {expanded && (
         <tr className="detail-row">
           <td colSpan={7}>
-            <PositionDetail symbol={row.symbol} />
+            <PositionDetail symbol={row.symbol} marketValueEur={row.marketValueEur} />
           </td>
         </tr>
       )}

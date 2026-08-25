@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
-import { formatDate, formatEur } from '../utils/format'
+import { annualizedReturn } from '../domain/xirr'
+import { formatDate, formatEur, formatPct } from '../utils/format'
 
 const TYPE_LABELS: Record<string, string> = {
   buy: 'Compra',
@@ -12,7 +13,7 @@ const TYPE_LABELS: Record<string, string> = {
   other: 'Otro',
 }
 
-export function PositionDetail({ symbol }: { symbol: string }) {
+export function PositionDetail({ symbol, marketValueEur }: { symbol: string; marketValueEur?: number }) {
   const transactions = useLiveQuery(
     () => db.transactions.where('symbol').equals(symbol).sortBy('date'),
     [symbol],
@@ -21,9 +22,28 @@ export function PositionDetail({ symbol }: { symbol: string }) {
   if (!transactions) return null
   const ordered = [...transactions].reverse()
 
+  const flows = transactions.map((t) => ({ date: new Date(t.date), amount: t.total }))
+  if (marketValueEur !== undefined) {
+    flows.push({ date: new Date(), amount: marketValueEur })
+  }
+  const annualizedPct = (() => {
+    const rate = annualizedReturn(flows)
+    return rate !== undefined ? rate * 100 : undefined
+  })()
+
   return (
     <div className="position-detail">
-      <h4>Movimientos de {symbol}</h4>
+      <div className="position-detail-header">
+        <h4>Movimientos de {symbol}</h4>
+        {annualizedPct !== undefined && (
+          <span
+            className={`annualized-badge ${annualizedPct >= 0 ? 'positive' : 'negative'}`}
+            title="Rentabilidad anualizada de esta posición (tiene en cuenta cuándo se compró cada lote, dividendos incluidos)."
+          >
+            {formatPct(annualizedPct)} anualizado
+          </span>
+        )}
+      </div>
       <table className="transactions-table">
         <thead>
           <tr>
