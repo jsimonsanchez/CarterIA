@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
 import { isPriceStale } from '../domain/priceFreshness'
-import { xirr } from '../domain/xirr'
+import { modifiedDietzAnnualized, xirr } from '../domain/xirr'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { formatEur, formatPct } from '../utils/format'
 
@@ -54,11 +54,18 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
   const depositFlows = transactions
     .filter((t) => t.type === 'deposit')
     .map((t) => ({ date: new Date(t.date), amount: -t.total }))
-  const xirrRate =
-    depositFlows.length > 0
-      ? xirr([...depositFlows, { date: new Date(), amount: marketValue + cashBalance }])
-      : undefined
-  const xirrPct = xirrRate !== undefined ? xirrRate * 100 : undefined
+  const allFlows = depositFlows.length > 0 ? [...depositFlows, { date: new Date(), amount: marketValue + cashBalance }] : []
+  // xirr() puede no converger con ciertos conjuntos de flujos (aportaciones
+  // muy concentradas, correcciones con importe negativo, etc.) — si falla,
+  // el método Dietz modificado (fórmula cerrada, no puede fallar por no
+  // converger) sirve de respaldo para que la cifra no desaparezca sin más.
+  const xirrRate = allFlows.length > 0 ? xirr(allFlows) : undefined
+  const usedFallback = xirrRate === undefined && allFlows.length > 0
+  if (usedFallback) {
+    console.warn('XIRR no convergió, usando Dietz modificado como respaldo. Flujos:', allFlows)
+  }
+  const annualizedRate = xirrRate ?? (usedFallback ? modifiedDietzAnnualized(allFlows) : undefined)
+  const xirrPct = annualizedRate !== undefined ? annualizedRate * 100 : undefined
 
   return (
     <section className="summary-cards">
@@ -78,8 +85,15 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
         <PnlLine label="Plusvalías realizadas" value={realizedPnl} pct={realizedPct} />
         <PnlLine label="Total (+ dividendos e intereses)" value={total} pct={totalPct} emphasized />
         {xirrPct !== undefined && (
-          <div className="pnl-line xirr-line" title="Rentabilidad anualizada ponderada por dinero (XIRR): tiene en cuenta cuándo entró cada ingreso, no solo cuánto.">
-            <span className="card-label">Rentabilidad anualizada (XIRR)</span>
+          <div
+            className="pnl-line xirr-line"
+            title={
+              usedFallback
+                ? 'Rentabilidad anualizada ponderada por dinero (aproximación, método Dietz modificado — el cálculo exacto XIRR no convergió con estos flujos).'
+                : 'Rentabilidad anualizada ponderada por dinero (XIRR): tiene en cuenta cuándo entró cada ingreso, no solo cuánto.'
+            }
+          >
+            <span className="card-label">Rentabilidad anualizada {usedFallback ? '(aprox.)' : '(XIRR)'}</span>
             <span className={`card-value ${xirrPct >= 0 ? 'positive' : 'negative'}`}>{formatPct(xirrPct)}</span>
           </div>
         )}

@@ -75,3 +75,36 @@ export function xirr(flows: CashFlow[]): number | undefined {
   }
   return (lo + hi) / 2
 }
+
+/**
+ * Método Dietz modificado: aproximación de la rentabilidad ponderada por
+ * dinero con fórmula cerrada (sin iteración), así que a diferencia de
+ * `xirr` no puede fallar por no converger — es el respaldo cuando `xirr`
+ * devuelve undefined con conjuntos de flujos raros (aportaciones muy
+ * concentradas, importes extremos, etc.). Asume valor inicial 0 (todo el
+ * capital entró vía las propias aportaciones).
+ */
+export function modifiedDietzAnnualized(flows: CashFlow[]): number | undefined {
+  const deposits = flows.filter((f) => f.amount < 0)
+  const final = flows.find((f) => f.amount > 0)
+  if (deposits.length === 0 || !final) return undefined
+
+  const sorted = [...deposits].sort((a, b) => a.date.getTime() - b.date.getTime())
+  const periodStart = sorted[0].date.getTime()
+  const periodEnd = final.date.getTime()
+  const totalDays = (periodEnd - periodStart) / (1000 * 60 * 60 * 24)
+  if (totalDays < 1) return undefined
+
+  const totalDeposited = -deposits.reduce((acc, f) => acc + f.amount, 0)
+  const weightedDeposits = deposits.reduce((acc, f) => {
+    const daysFromStart = (f.date.getTime() - periodStart) / (1000 * 60 * 60 * 24)
+    const weight = (totalDays - daysFromStart) / totalDays
+    return acc + -f.amount * weight
+  }, 0)
+  if (weightedDeposits <= 0) return undefined
+
+  const periodReturn = (final.amount - totalDeposited) / weightedDeposits
+  if (periodReturn <= -1) return undefined
+
+  return Math.pow(1 + periodReturn, 365 / totalDays) - 1
+}
