@@ -251,7 +251,7 @@ async function main() {
     // usePortfolioRows calcula el valor de cada posición de forma asíncrona
     // (llamada real a /api/fx por cada divisa distinta) antes de pintar nada
     // — hace falta esperar a que esas peticiones de red terminen.
-    await new Promise((r) => setTimeout(r, 6000))
+    await new Promise((r) => setTimeout(r, 9000))
 
     const verify2 = await cdp.send('Runtime.evaluate', {
       expression: `(async () => {
