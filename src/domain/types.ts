@@ -35,6 +35,8 @@ export interface PriceCacheEntry {
   currency: string
   source: PriceSource
   fetchedAt: string // ISO 8601
+  /** Cierre de la sesión anterior — el % de variación diaria es el mismo en cualquier divisa, no hace falta convertir a EUR. */
+  previousClose?: number
 }
 
 /**

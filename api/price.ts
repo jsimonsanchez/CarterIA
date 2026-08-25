@@ -4,6 +4,8 @@ interface PriceResult {
   price: number
   currency: string
   source: 'twelvedata' | 'yahoo'
+  /** Cierre de la sesión anterior, para calcular la variación del día — mismo % con cualquier divisa, no hace falta convertir. */
+  previousClose?: number
 }
 
 // Yahoo devuelve 403/429 sin una cabecera User-Agent de navegador real.
@@ -26,7 +28,13 @@ async function fetchTwelveData(symbol: string, exchange: string | null): Promise
     // Twelve Data responde 200 con {status:"error", ...} cuando se agota la
     // cuota o el símbolo no existe, en vez de un código HTTP de error.
     if (data.status === 'error' || !data.close || !data.currency) return null
-    return { price: Number(data.close), currency: data.currency, source: 'twelvedata' }
+    const previousClose = Number(data.previous_close)
+    return {
+      price: Number(data.close),
+      currency: data.currency,
+      source: 'twelvedata',
+      previousClose: Number.isFinite(previousClose) ? previousClose : undefined,
+    }
   } catch {
     return null
   }
@@ -45,8 +53,9 @@ async function fetchYahooFromHost(host: string, symbol: string): Promise<PriceRe
     const result = data?.chart?.result?.[0]
     const price = result?.meta?.regularMarketPrice
     const currency = result?.meta?.currency
+    const previousClose = result?.meta?.previousClose ?? result?.meta?.chartPreviousClose
     if (typeof price !== 'number' || !currency) return null
-    return { price, currency, source: 'yahoo' }
+    return { price, currency, source: 'yahoo', previousClose: typeof previousClose === 'number' ? previousClose : undefined }
   } catch {
     return null
   }

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState } from 'react'
 import './App.css'
+import { DayMoversPanel } from './components/DayMoversPanel'
 import { ImportPanel } from './components/ImportPanel'
 import { PositionsTable } from './components/PositionsTable'
 import { RealizedGainsPanel } from './components/RealizedGainsPanel'
@@ -56,6 +57,7 @@ function App() {
       {tab === 'cartera' ? (
         <>
           <SummaryCards rows={rows} />
+          <DayMoversPanel rows={rows} />
           <div className="main-grid">
             <PositionsTable rows={rows} />
             <Suspense fallback={null}>

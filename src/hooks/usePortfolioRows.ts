@@ -19,6 +19,9 @@ export interface PortfolioRow {
   priceSource?: 'twelvedata' | 'yahoo' | 'cache'
   priceFetchedAt?: string
   priceError?: string
+  /** % de variación respecto al cierre de la sesión anterior — igual en cualquier divisa, no hace falta convertir. */
+  dayChangePct?: number
+  dayChangeEur?: number
 }
 
 /**
@@ -63,6 +66,15 @@ export function usePortfolioRows() {
             const currentPriceEur = await convertToEur(price.price, price.currency)
             const marketValueEur = pos.quantity * currentPriceEur
             const unrealizedPnlEur = marketValueEur - costBasis
+
+            let dayChangePct: number | undefined
+            let dayChangeEur: number | undefined
+            if (price.previousClose && price.previousClose > 0) {
+              dayChangePct = ((price.price - price.previousClose) / price.previousClose) * 100
+              const previousCloseEur = await convertToEur(price.previousClose, price.currency)
+              dayChangeEur = pos.quantity * (currentPriceEur - previousCloseEur)
+            }
+
             return {
               ...base,
               currentPriceNative: price.price,
@@ -73,6 +85,8 @@ export function usePortfolioRows() {
               unrealizedPnlPct: costBasis > 0 ? (unrealizedPnlEur / costBasis) * 100 : undefined,
               priceSource: price.source,
               priceFetchedAt: price.fetchedAt,
+              dayChangePct,
+              dayChangeEur,
             }
           } catch (err) {
             return { ...base, priceError: err instanceof Error ? err.message : String(err) }

@@ -106,9 +106,15 @@ function seedExpression() {
     { ticker: 'F.US', instrument: 'Ford Motor', qty: 400, openPrice: 10.5, closePrice: 9.1, openDate: '2025-12-01', closeDate: '2026-06-05' },
   ]
 
+  const DAY_CHANGE_PCT = {
+    'AAPL.US': 2.56, 'NVDA.US': 10.47, 'AMZN.US': -6.5, 'TSLA.US': -7.89,
+    'EVO.SE': 7.63, 'UNH.US': 8.5, 'GOOGL.US': 2.56, 'META.US': -1.36,
+  }
+
   return `(async () => {
     const POSITIONS = ${JSON.stringify(POSITIONS)};
     const CLOSED = ${JSON.stringify(CLOSED)};
+    const DAY_CHANGE_PCT = ${JSON.stringify(DAY_CHANGE_PCT)};
     const nowIso = new Date().toISOString();
     let idc = 3000000000;
     const transactions = [];
@@ -122,7 +128,10 @@ function seedExpression() {
       costBasis += p.qty * avgCostEur;
       transactions.push({ id: 'xtb-demo-' + (idc++), date: '2025-03-01T10:00:00.000Z', type: 'buy', symbol: p.ticker, quantity: p.qty, price: avgCostEur, currency: 'EUR', commission: 0, total: -(p.qty * avgCostEur), rawSymbol: p.ticker, rawDescription: 'Stock purchase' });
       positions.push({ symbol: p.ticker, quantity: p.qty, averageCost: avgCostEur, currency: 'EUR', lastUpdated: nowIso });
-      priceCache.push({ symbol: p.ticker, price: p.eurPrice / p.fxRate, currency: p.currency, source: 'yahoo', fetchedAt: nowIso });
+      const nativePrice = p.eurPrice / p.fxRate;
+      const dayPct = DAY_CHANGE_PCT[p.ticker];
+      const previousClose = dayPct !== undefined ? nativePrice / (1 + dayPct / 100) : undefined;
+      priceCache.push({ symbol: p.ticker, price: nativePrice, currency: p.currency, source: 'yahoo', fetchedAt: nowIso, previousClose });
       symbolMappings.push({ xtbSymbol: p.ticker, twelveDataSymbol: p.ticker.split('.')[0], yahooSymbol: p.ticker, name: p.instrument });
     }
 

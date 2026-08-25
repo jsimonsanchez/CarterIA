@@ -5,6 +5,7 @@ interface ProxyPriceResponse {
   price: number
   currency: string
   source: 'twelvedata' | 'yahoo'
+  previousClose?: number
 }
 
 /**
@@ -36,6 +37,7 @@ export async function getPrice(mapping: SymbolMapping): Promise<PriceCacheEntry>
       currency: data.currency,
       source: data.source,
       fetchedAt: new Date().toISOString(),
+      previousClose: data.previousClose,
     }
     await db.priceCache.put(entry)
     return entry
