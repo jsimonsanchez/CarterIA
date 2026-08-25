@@ -39,9 +39,9 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
   return (
     <section className="summary-cards">
       <Card
-        label="Valor de mercado + liquidez"
+        label="Valor Total"
         value={formatEur(marketValue + cashBalance)}
-        sub={`Posiciones: ${formatEur(marketValue)} · Liquidez: ${formatEur(cashBalance)}`}
+        subLines={[`Posiciones: ${formatEur(marketValue)}`, `Liquidez: ${formatEur(cashBalance)}`]}
         hint={missingPrices > 0 ? `${missingPrices} sin precio` : undefined}
       />
       <Card label="Coste de la cartera" value={formatEur(costBasis)} />
@@ -80,12 +80,14 @@ function Card({
   label,
   value,
   sub,
+  subLines,
   hint,
   tone,
 }: {
   label: string
   value: string
   sub?: string
+  subLines?: string[]
   hint?: string
   tone?: 'positive' | 'negative'
 }) {
@@ -94,6 +96,11 @@ function Card({
       <span className="card-label">{label}</span>
       <span className={`card-value ${tone ?? ''}`}>{value}</span>
       {sub && <span className={`card-sub ${tone ?? ''}`}>{sub}</span>}
+      {subLines?.map((line) => (
+        <span key={line} className={`card-sub ${tone ?? ''}`}>
+          {line}
+        </span>
+      ))}
       {hint && <span className="card-hint">{hint}</span>}
     </div>
   )
