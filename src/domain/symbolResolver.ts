@@ -11,19 +11,21 @@ export function resolveSymbol(xtbSymbol: string): SymbolMapping | undefined {
 }
 
 /**
- * Da de alta en `symbolMappings` los símbolos de XTB que aún no tengan
- * entrada, usando `resolveSymbol`. No toca las entradas ya existentes, para
- * no pisar ediciones manuales del usuario en reimportaciones. Los símbolos
- * sin regla conocida (mercado no cubierto) se devuelven en `unresolved` para
- * que la UI pida un mapeo manual.
+ * Da de alta o refresca en `symbolMappings` los símbolos de XTB presentes en
+ * `xtbSymbols`, usando `resolveSymbol`. Se sobrescribe siempre en vez de
+ * respetar entradas existentes: todavía no hay UI para editar el mapeo a
+ * mano, así que no hay ediciones de usuario que proteger, y sobrescribir
+ * permite que una corrección en las reglas de mapeo se autoaplique en la
+ * siguiente importación sin pasos manuales. Si en el futuro se añade edición
+ * manual, este comportamiento tendrá que cambiar para no pisarla. Los
+ * símbolos sin regla conocida (mercado no cubierto) se devuelven en
+ * `unresolved` para que la UI pida un mapeo manual.
  */
 export async function ensureSymbolMappings(xtbSymbols: Iterable<string>): Promise<{ unresolved: string[] }> {
   const unresolved: string[] = []
 
   for (const xtbSymbol of new Set(xtbSymbols)) {
     if (!xtbSymbol) continue
-    const existing = await db.symbolMappings.get(xtbSymbol)
-    if (existing) continue
 
     const resolved = resolveSymbol(xtbSymbol)
     if (resolved) {

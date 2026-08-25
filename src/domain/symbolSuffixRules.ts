@@ -14,14 +14,19 @@ interface MarketSuffixRule {
  * (tickers de clase de acción, ETCs con nombre distinto, etc.) van en
  * `symbolOverrides.ts` en vez de aquí.
  */
+// Nombres de exchange verificados contra /symbol_search de Twelve Data — el
+// primer intento (nombres "legibles" como "Nasdaq Stockholm") era incorrecto
+// para todos los mercados salvo LSE; con el nombre equivocado, Twelve Data
+// devuelve "símbolo inválido" en vez de fallar solo por límite de plan, así
+// que caía a Yahoo siempre sin ni siquiera intentarlo bien.
 const XTB_SUFFIX_RULES: Record<string, MarketSuffixRule> = {
   US: { yahooSuffix: '' },
-  DE: { yahooSuffix: '.DE', twelveDataExchange: 'XETRA' },
+  DE: { yahooSuffix: '.DE', twelveDataExchange: 'XETR' },
   UK: { yahooSuffix: '.L', twelveDataExchange: 'LSE' },
-  SE: { yahooSuffix: '.ST', twelveDataExchange: 'Nasdaq Stockholm' },
-  DK: { yahooSuffix: '.CO', twelveDataExchange: 'Nasdaq Copenhagen' },
-  FR: { yahooSuffix: '.PA', twelveDataExchange: 'Euronext Paris' },
-  IT: { yahooSuffix: '.MI', twelveDataExchange: 'Borsa Italiana' },
+  SE: { yahooSuffix: '.ST', twelveDataExchange: 'OMX' },
+  DK: { yahooSuffix: '.CO', twelveDataExchange: 'OMXC' },
+  FR: { yahooSuffix: '.PA', twelveDataExchange: 'Euronext' },
+  IT: { yahooSuffix: '.MI', twelveDataExchange: 'MTA' },
 }
 
 /**
