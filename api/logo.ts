@@ -31,7 +31,18 @@ export default async function handler(request: Request): Promise<Response> {
       return new Response(null, { status: 404 })
     }
 
-    const imgRes = await fetch(metaData.url)
+    let imgRes = await fetch(metaData.url)
+
+    // Twelve Data a veces resuelve un dominio (p.ej. para empresas recién
+    // salidas a bolsa) pero todavía no tiene la imagen del logo en su CDN
+    // (la propia URL que ellos devuelven da 404). En ese caso recurrimos al
+    // favicon público de Google para ese mismo dominio como aproximación.
+    if (!imgRes.ok || !imgRes.body) {
+      const domain = metaData.url.split('/').pop()
+      if (!domain) return new Response(null, { status: 404 })
+      imgRes = await fetch(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`)
+    }
+
     if (!imgRes.ok || !imgRes.body) return new Response(null, { status: 404 })
 
     return new Response(imgRes.body, {
