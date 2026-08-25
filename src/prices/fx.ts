@@ -6,10 +6,10 @@ async function getFxRateToEur(currency: string): Promise<number> {
   const cached = rateCache.get(currency)
   if (cached && Date.now() - cached.fetchedAt < RATE_TTL_MS) return cached.rate
 
-  const res = await fetch(`https://api.frankfurter.app/latest?from=${encodeURIComponent(currency)}&to=EUR`)
+  const res = await fetch(`/api/fx?from=${encodeURIComponent(currency)}`)
   if (!res.ok) throw new Error(`No se pudo obtener el tipo de cambio ${currency}->EUR`)
   const data = await res.json()
-  const rate = data?.rates?.EUR
+  const rate = data?.rate
   if (typeof rate !== 'number') throw new Error(`Respuesta de tipo de cambio inesperada para ${currency}`)
 
   rateCache.set(currency, { rate, fetchedAt: Date.now() })
