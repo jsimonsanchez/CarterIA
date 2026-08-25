@@ -159,17 +159,27 @@
   align-items: start;
 }
 
-@media (max-width: 800px) {
+.main-grid > * {
+  /* Sin esto, los hijos de grid no se encogen por debajo de su ancho de
+     contenido (la tabla ancha), y acaban invadiendo la columna del gráfico. */
+  min-width: 0;
+}
+
+@media (max-width: 1000px) {
   .main-grid {
     grid-template-columns: 1fr;
   }
 }
 
-.positions-table {
+.positions-table-wrapper {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+}
+
+.positions-table {
+  min-width: 640px;
 }
 
 .position-row {

@@ -61,28 +61,30 @@ export function PositionsTable({ rows }: { rows: PortfolioRow[] }) {
   }
 
   return (
-    <table className="positions-table">
-      <thead>
-        <tr>
-          {COLUMNS.map((col) => (
-            <th key={col.key} className="sortable-th" onClick={() => handleSort(col.key)}>
-              {col.label}
-              {sortKey === col.key && <span className="sort-arrow">{sortDir === 'asc' ? ' ▲' : ' ▼'}</span>}
-            </th>
+    <div className="positions-table-wrapper">
+      <table className="positions-table">
+        <thead>
+          <tr>
+            {COLUMNS.map((col) => (
+              <th key={col.key} className="sortable-th" onClick={() => handleSort(col.key)}>
+                {col.label}
+                {sortKey === col.key && <span className="sort-arrow">{sortDir === 'asc' ? ' ▲' : ' ▼'}</span>}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((row) => (
+            <PositionRow
+              key={row.symbol}
+              row={row}
+              expanded={expanded === row.symbol}
+              onToggle={() => setExpanded(expanded === row.symbol ? null : row.symbol)}
+            />
           ))}
-        </tr>
-      </thead>
-      <tbody>
-        {sorted.map((row) => (
-          <PositionRow
-            key={row.symbol}
-            row={row}
-            expanded={expanded === row.symbol}
-            onToggle={() => setExpanded(expanded === row.symbol ? null : row.symbol)}
-          />
-        ))}
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    </div>
   )
 }
 
