@@ -25,8 +25,7 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
   )
 
   const realizedPnl = sum(closedTrades, (t) => t.realizedPnlEur)
-  const realizedCost = sum(closedTrades, (t) => t.purchaseValueEur)
-  const realizedPct = realizedCost > 0 ? (realizedPnl / realizedCost) * 100 : undefined
+  const realizedPct = costBasis > 0 ? (realizedPnl / costBasis) * 100 : undefined
 
   const dividends = sum(
     transactions.filter((t) => t.type === 'dividend'),
@@ -37,9 +36,11 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
     (t) => t.total,
   )
 
+  // Los tres % se calculan sobre el mismo "coste de la cartera" (posiciones
+  // abiertas) para que sean directamente comparables entre sí, en vez de
+  // cada uno respecto a una base distinta.
   const total = unrealizedPnl + realizedPnl + dividends + interest
-  const totalCost = costBasis + realizedCost
-  const totalPct = totalCost > 0 ? (total / totalCost) * 100 : undefined
+  const totalPct = costBasis > 0 ? (total / costBasis) * 100 : undefined
 
   return (
     <section className="summary-cards">
