@@ -6,14 +6,14 @@ import { PositionDetail } from './PositionDetail'
 type SortKey = 'symbol' | 'quantity' | 'averageCost' | 'price' | 'value' | 'pnl' | 'pnlPct'
 type SortDir = 'asc' | 'desc'
 
-const COLUMNS: { key: SortKey; label: string }[] = [
+const COLUMNS: { key: SortKey; label: string; num?: boolean }[] = [
   { key: 'symbol', label: 'Símbolo' },
-  { key: 'quantity', label: 'Cantidad' },
-  { key: 'averageCost', label: 'Coste medio' },
-  { key: 'price', label: 'Precio actual' },
-  { key: 'value', label: 'Valor' },
-  { key: 'pnl', label: 'Plusvalía' },
-  { key: 'pnlPct', label: '% Plusvalía' },
+  { key: 'quantity', label: 'Cantidad', num: true },
+  { key: 'averageCost', label: 'Coste medio', num: true },
+  { key: 'price', label: 'Precio actual', num: true },
+  { key: 'value', label: 'Valor', num: true },
+  { key: 'pnl', label: 'Plusvalía', num: true },
+  { key: 'pnlPct', label: '% Plusvalía', num: true },
 ]
 
 function sortValue(row: PortfolioRow, key: SortKey): number | string {
@@ -61,12 +61,16 @@ export function PositionsTable({ rows }: { rows: PortfolioRow[] }) {
   }
 
   return (
-    <div className="positions-table-wrapper">
+    <div className="positions-table-wrapper scroll-thin">
       <table className="positions-table">
         <thead>
           <tr>
             {COLUMNS.map((col) => (
-              <th key={col.key} className="sortable-th" onClick={() => handleSort(col.key)}>
+              <th
+                key={col.key}
+                className={`sortable-th ${col.num ? 'num' : ''}`}
+                onClick={() => handleSort(col.key)}
+              >
                 {col.label}
                 {sortKey === col.key && <span className="sort-arrow">{sortDir === 'asc' ? ' ▲' : ' ▼'}</span>}
               </th>
@@ -100,9 +104,9 @@ function PositionRow({ row, expanded, onToggle }: { row: PortfolioRow; expanded:
             {row.name && <span className="symbol-name">{row.name}</span>}
           </div>
         </td>
-        <td>{row.quantity.toLocaleString('es-ES', { maximumFractionDigits: 4 })}</td>
-        <td>{formatEur(row.averageCost)}</td>
-        <td>
+        <td className="num">{row.quantity.toLocaleString('es-ES', { maximumFractionDigits: 4 })}</td>
+        <td className="num">{formatEur(row.averageCost)}</td>
+        <td className="num">
           {row.priceError ? (
             <span className="error-text" title={row.priceError}>
               error
@@ -116,9 +120,9 @@ function PositionRow({ row, expanded, onToggle }: { row: PortfolioRow; expanded:
             <span className="card-hint">sin precio</span>
           )}
         </td>
-        <td>{row.marketValueEur !== undefined ? formatEur(row.marketValueEur) : '—'}</td>
-        <td className={tone}>{row.unrealizedPnlEur !== undefined ? formatEur(row.unrealizedPnlEur) : '—'}</td>
-        <td className={tone}>{row.unrealizedPnlPct !== undefined ? formatPct(row.unrealizedPnlPct) : '—'}</td>
+        <td className="num">{row.marketValueEur !== undefined ? formatEur(row.marketValueEur) : '—'}</td>
+        <td className={`num ${tone}`}>{row.unrealizedPnlEur !== undefined ? formatEur(row.unrealizedPnlEur) : '—'}</td>
+        <td className={`num ${tone}`}>{row.unrealizedPnlPct !== undefined ? formatPct(row.unrealizedPnlPct) : '—'}</td>
       </tr>
       {expanded && (
         <tr className="detail-row">

@@ -29,9 +29,9 @@ export function PositionDetail({ symbol }: { symbol: string }) {
           <tr>
             <th>Fecha</th>
             <th>Tipo</th>
-            <th>Cantidad</th>
-            <th>Precio</th>
-            <th>Importe</th>
+            <th className="num">Cantidad</th>
+            <th className="num">Precio</th>
+            <th className="num">Importe</th>
           </tr>
         </thead>
         <tbody>
@@ -39,9 +39,9 @@ export function PositionDetail({ symbol }: { symbol: string }) {
             <tr key={tx.id}>
               <td>{formatDate(tx.date)}</td>
               <td>{TYPE_LABELS[tx.type] ?? tx.type}</td>
-              <td>{tx.quantity > 0 ? tx.quantity.toLocaleString('es-ES', { maximumFractionDigits: 4 }) : '—'}</td>
-              <td>{tx.price > 0 ? formatEur(tx.price) : '—'}</td>
-              <td>{formatEur(tx.total)}</td>
+              <td className="num">{tx.quantity > 0 ? tx.quantity.toLocaleString('es-ES', { maximumFractionDigits: 4 }) : '—'}</td>
+              <td className="num">{tx.price > 0 ? formatEur(tx.price) : '—'}</td>
+              <td className={`num ${tx.total >= 0 ? 'positive' : 'negative'}`}>{formatEur(tx.total)}</td>
             </tr>
           ))}
         </tbody>

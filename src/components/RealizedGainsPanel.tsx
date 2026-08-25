@@ -33,81 +33,83 @@ export function RealizedGainsPanel() {
         </span>
       </div>
 
-      <table className="positions-table">
-        <thead>
-          <tr>
-            <th>Año</th>
-            <th>Operaciones cerradas</th>
-            <th>Plusvalía realizada</th>
-            <th>% Plusvalía</th>
-          </tr>
-        </thead>
-        <tbody>
-          {years.map((year) => {
-            const yearTrades = byYear.get(year)!.sort((a, b) => b.closeDate.localeCompare(a.closeDate))
-            const yearTotal = yearTrades.reduce((acc, t) => acc + t.realizedPnlEur, 0)
-            const yearCost = yearTrades.reduce((acc, t) => acc + t.purchaseValueEur, 0)
-            const yearPct = yearCost > 0 ? (yearTotal / yearCost) * 100 : undefined
-            const expanded = openYear === year
+      <div className="scroll-thin" style={{ overflowX: 'auto' }}>
+        <table className="positions-table">
+          <thead>
+            <tr>
+              <th>Año</th>
+              <th className="num">Operaciones cerradas</th>
+              <th className="num">Plusvalía realizada</th>
+              <th className="num">% Plusvalía</th>
+            </tr>
+          </thead>
+          <tbody>
+            {years.map((year) => {
+              const yearTrades = byYear.get(year)!.sort((a, b) => b.closeDate.localeCompare(a.closeDate))
+              const yearTotal = yearTrades.reduce((acc, t) => acc + t.realizedPnlEur, 0)
+              const yearCost = yearTrades.reduce((acc, t) => acc + t.purchaseValueEur, 0)
+              const yearPct = yearCost > 0 ? (yearTotal / yearCost) * 100 : undefined
+              const expanded = openYear === year
 
-            return (
-              <Fragment key={year}>
-                <tr className="position-row" onClick={() => setOpenYear(expanded ? null : year)}>
-                  <td>
-                    <strong>{year}</strong>
-                  </td>
-                  <td>{yearTrades.length}</td>
-                  <td className={yearTotal >= 0 ? 'positive' : 'negative'}>{formatEur(yearTotal)}</td>
-                  <td className={yearTotal >= 0 ? 'positive' : 'negative'}>
-                    {yearPct !== undefined ? formatPct(yearPct) : '—'}
-                  </td>
-                </tr>
-                {expanded && (
-                  <tr className="detail-row">
-                    <td colSpan={4}>
-                      <div className="position-detail">
-                        <table className="transactions-table">
-                          <thead>
-                            <tr>
-                              <th>Cierre</th>
-                              <th>Símbolo</th>
-                              <th>Cantidad</th>
-                              <th>Coste</th>
-                              <th>Venta</th>
-                              <th>Plusvalía</th>
-                              <th>% Plusvalía</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {yearTrades.map((t) => {
-                              const pct = t.purchaseValueEur > 0 ? (t.realizedPnlEur / t.purchaseValueEur) * 100 : undefined
-                              return (
-                                <tr key={t.id}>
-                                  <td>{formatDate(t.closeDate)}</td>
-                                  <td>{t.symbol}</td>
-                                  <td>{t.quantity.toLocaleString('es-ES', { maximumFractionDigits: 4 })}</td>
-                                  <td>{formatEur(t.purchaseValueEur)}</td>
-                                  <td>{formatEur(t.saleValueEur)}</td>
-                                  <td className={t.realizedPnlEur >= 0 ? 'positive' : 'negative'}>
-                                    {formatEur(t.realizedPnlEur)}
-                                  </td>
-                                  <td className={t.realizedPnlEur >= 0 ? 'positive' : 'negative'}>
-                                    {pct !== undefined ? formatPct(pct) : '—'}
-                                  </td>
-                                </tr>
-                              )
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
+              return (
+                <Fragment key={year}>
+                  <tr className="position-row" onClick={() => setOpenYear(expanded ? null : year)}>
+                    <td>
+                      <strong>{year}</strong>
+                    </td>
+                    <td className="num">{yearTrades.length}</td>
+                    <td className={`num ${yearTotal >= 0 ? 'positive' : 'negative'}`}>{formatEur(yearTotal)}</td>
+                    <td className={`num ${yearTotal >= 0 ? 'positive' : 'negative'}`}>
+                      {yearPct !== undefined ? formatPct(yearPct) : '—'}
                     </td>
                   </tr>
-                )}
-              </Fragment>
-            )
-          })}
-        </tbody>
-      </table>
+                  {expanded && (
+                    <tr className="detail-row">
+                      <td colSpan={4}>
+                        <div className="position-detail">
+                          <table className="transactions-table">
+                            <thead>
+                              <tr>
+                                <th>Cierre</th>
+                                <th>Símbolo</th>
+                                <th className="num">Cantidad</th>
+                                <th className="num">Coste</th>
+                                <th className="num">Venta</th>
+                                <th className="num">Plusvalía</th>
+                                <th className="num">% Plusvalía</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {yearTrades.map((t) => {
+                                const pct = t.purchaseValueEur > 0 ? (t.realizedPnlEur / t.purchaseValueEur) * 100 : undefined
+                                return (
+                                  <tr key={t.id}>
+                                    <td>{formatDate(t.closeDate)}</td>
+                                    <td>{t.symbol}</td>
+                                    <td className="num">{t.quantity.toLocaleString('es-ES', { maximumFractionDigits: 4 })}</td>
+                                    <td className="num">{formatEur(t.purchaseValueEur)}</td>
+                                    <td className="num">{formatEur(t.saleValueEur)}</td>
+                                    <td className={`num ${t.realizedPnlEur >= 0 ? 'positive' : 'negative'}`}>
+                                      {formatEur(t.realizedPnlEur)}
+                                    </td>
+                                    <td className={`num ${t.realizedPnlEur >= 0 ? 'positive' : 'negative'}`}>
+                                      {pct !== undefined ? formatPct(pct) : '—'}
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     </section>
   )
 }
