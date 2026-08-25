@@ -14,17 +14,31 @@ export function AllocationChart({ rows }: { rows: PortfolioRow[] }) {
     return <p className="empty-state">Sin datos de valor para graficar todavía.</p>
   }
 
+  const total = data.reduce((acc, d) => acc + d.value, 0)
+
   return (
     <div className="chart-container">
       <ResponsiveContainer width="100%" height={320}>
         <PieChart>
-          <Pie data={data} dataKey="value" nameKey="name" innerRadius={70} outerRadius={120} paddingAngle={1}>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={70}
+            outerRadius={120}
+            paddingAngle={1}
+            isAnimationActive={false}
+          >
             {data.map((entry, i) => (
               <Cell key={entry.name} fill={COLORS[i % COLORS.length]} />
             ))}
           </Pie>
           <Tooltip
-            formatter={(value) => formatEur(Number(value))}
+            formatter={(value, name) => {
+              const numericValue = Number(value)
+              const pct = total > 0 ? (numericValue / total) * 100 : 0
+              return [`${formatEur(numericValue)} (${pct.toFixed(1)}%)`, name]
+            }}
             contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0' }}
           />
         </PieChart>
