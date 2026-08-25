@@ -32,8 +32,12 @@ async function fetchTwelveData(symbol: string, exchange: string | null): Promise
   }
 }
 
-async function fetchYahoo(symbol: string): Promise<PriceResult | null> {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}`
+// Yahoo balancea entre estos dos hosts; si uno falla (caída puntual de ese
+// servidor concreto, no un bloqueo del proveedor entero) se reintenta con el otro.
+const YAHOO_HOSTS = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com']
+
+async function fetchYahooFromHost(host: string, symbol: string): Promise<PriceResult | null> {
+  const url = `https://${host}/v8/finance/chart/${encodeURIComponent(symbol)}`
   try {
     const res = await fetch(url, { headers: { 'User-Agent': YAHOO_USER_AGENT } })
     if (!res.ok) return null
@@ -46,6 +50,14 @@ async function fetchYahoo(symbol: string): Promise<PriceResult | null> {
   } catch {
     return null
   }
+}
+
+async function fetchYahoo(symbol: string): Promise<PriceResult | null> {
+  for (const host of YAHOO_HOSTS) {
+    const result = await fetchYahooFromHost(host, symbol)
+    if (result) return result
+  }
+  return null
 }
 
 /**
