@@ -14,6 +14,7 @@ dist-ssr
 public/test-fixture.xlsx
 public/demo-fixture.xlsx
 demo-output/
+demo-cartera-150k.xlsx
 
 # Vercel / secretos locales (la TWELVE_DATA_API_KEY va aquí en desarrollo)
 .env
