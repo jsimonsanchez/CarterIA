@@ -7,6 +7,11 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
   const closedTrades = useLiveQuery(() => db.closedTrades.toArray(), []) ?? []
   const transactions = useLiveQuery(() => db.transactions.toArray(), []) ?? []
 
+  // Cada transacción ya trae su importe neto en EUR (ingresos +, compras −,
+  // ventas +, dividendos +, intereses +, comisiones −), así que sumar todo
+  // el histórico da directamente la liquidez disponible sin invertir.
+  const cashBalance = sum(transactions, (t) => t.total)
+
   const costBasis = sum(rows, (r) => r.costBasis)
   const withPrice = rows.filter((r) => r.marketValueEur !== undefined)
   const marketValue = sum(withPrice, (r) => r.marketValueEur ?? 0)
@@ -33,7 +38,12 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
 
   return (
     <section className="summary-cards">
-      <Card label="Valor de mercado" value={formatEur(marketValue)} hint={missingPrices > 0 ? `${missingPrices} sin precio` : undefined} />
+      <Card
+        label="Valor de mercado + liquidez"
+        value={formatEur(marketValue + cashBalance)}
+        sub={`Posiciones: ${formatEur(marketValue)} · Liquidez: ${formatEur(cashBalance)}`}
+        hint={missingPrices > 0 ? `${missingPrices} sin precio` : undefined}
+      />
       <Card label="Coste de la cartera" value={formatEur(costBasis)} />
       <div className="card">
         <PnlLine label="Plusvalía no realizada" value={unrealizedPnl} pct={unrealizedPct} />
