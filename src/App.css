@@ -334,12 +334,43 @@
   }
 }
 
+.table-search {
+  width: 100%;
+  max-width: 280px;
+  margin-bottom: 10px;
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s ease;
+}
+
+.table-search::placeholder {
+  color: var(--text-muted);
+}
+
+.table-search:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 .positions-table-wrapper {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   overflow-x: auto;
+}
+
+.stale-badge {
+  margin-left: 5px;
+  font-size: 11px;
+  color: var(--warning);
+  cursor: help;
 }
 
 .positions-table {

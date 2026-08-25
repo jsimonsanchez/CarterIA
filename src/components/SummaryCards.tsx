@@ -1,5 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
+import { isPriceStale } from '../domain/priceFreshness'
+import { xirr } from '../domain/xirr'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { formatEur, formatPct } from '../utils/format'
 
@@ -18,6 +20,7 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
   const unrealizedPnl = sum(withPrice, (r) => r.unrealizedPnlEur ?? 0)
   const unrealizedPct = costBasis > 0 ? (unrealizedPnl / costBasis) * 100 : undefined
   const missingPrices = rows.length - withPrice.length
+  const stalePrices = withPrice.filter((r) => isPriceStale(r.priceFetchedAt)).length
 
   const totalDeposits = sum(
     transactions.filter((t) => t.type === 'deposit'),
@@ -42,13 +45,28 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
   const total = unrealizedPnl + realizedPnl + dividends + interest
   const totalPct = costBasis > 0 ? (total / costBasis) * 100 : undefined
 
+  // XIRR: rentabilidad anualizada ponderada por dinero. Flujos = cada
+  // ingreso (negativo, sale del bolsillo del inversor) + el valor actual de
+  // todo hoy (positivo, como si se liquidara la cartera). Compras, ventas,
+  // dividendos e intereses no son flujos aparte — ya están recogidos en el
+  // valor final. No es TWR (necesitaría un histórico diario de valoración
+  // que todavía no se guarda).
+  const depositFlows = transactions
+    .filter((t) => t.type === 'deposit')
+    .map((t) => ({ date: new Date(t.date), amount: -t.total }))
+  const xirrRate =
+    depositFlows.length > 0
+      ? xirr([...depositFlows, { date: new Date(), amount: marketValue + cashBalance }])
+      : undefined
+  const xirrPct = xirrRate !== undefined ? xirrRate * 100 : undefined
+
   return (
     <section className="summary-cards">
       <Card
         label="Valor Total"
         value={formatEur(marketValue + cashBalance)}
         subLines={[`Posiciones: ${formatEur(marketValue)}`, `Liquidez: ${formatEur(cashBalance)}`]}
-        hint={missingPrices > 0 ? `${missingPrices} sin precio` : undefined}
+        hint={buildPriceHint(missingPrices, stalePrices)}
       />
       <Card
         label="Coste de la cartera"
@@ -59,6 +77,12 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
         <PnlLine label="Plusvalía no realizada" value={unrealizedPnl} pct={unrealizedPct} />
         <PnlLine label="Plusvalías realizadas" value={realizedPnl} pct={realizedPct} />
         <PnlLine label="Total (+ dividendos e intereses)" value={total} pct={totalPct} emphasized />
+        {xirrPct !== undefined && (
+          <div className="pnl-line xirr-line" title="Rentabilidad anualizada ponderada por dinero (XIRR): tiene en cuenta cuándo entró cada ingreso, no solo cuánto.">
+            <span className="card-label">Rentabilidad anualizada (XIRR)</span>
+            <span className={`card-value ${xirrPct >= 0 ? 'positive' : 'negative'}`}>{formatPct(xirrPct)}</span>
+          </div>
+        )}
       </div>
       <Card label="Posiciones abiertas" value={String(rows.length)} />
     </section>
@@ -118,4 +142,11 @@ function Card({
 
 function sum<T>(items: T[], pick: (item: T) => number): number {
   return items.reduce((acc, item) => acc + pick(item), 0)
+}
+
+function buildPriceHint(missing: number, stale: number): string | undefined {
+  const parts: string[] = []
+  if (missing > 0) parts.push(`${missing} sin precio`)
+  if (stale > 0) parts.push(`${stale} desactualizado${stale > 1 ? 's' : ''}`)
+  return parts.length > 0 ? parts.join(' · ') : undefined
 }

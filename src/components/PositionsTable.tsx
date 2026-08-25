@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { isPriceStale } from '../domain/priceFreshness'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { formatEur, formatPct } from '../utils/format'
 import { PositionDetail } from './PositionDetail'
@@ -39,12 +40,20 @@ export function PositionsTable({ rows }: { rows: PortfolioRow[] }) {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('value')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [query, setQuery] = useState('')
 
   if (rows.length === 0) {
     return <p className="empty-state">Sin posiciones — importa un extracto de XTB para empezar.</p>
   }
 
-  const sorted = [...rows].sort((a, b) => {
+  const normalizedQuery = query.trim().toLowerCase()
+  const filtered = normalizedQuery
+    ? rows.filter(
+        (r) => r.symbol.toLowerCase().includes(normalizedQuery) || r.name?.toLowerCase().includes(normalizedQuery),
+      )
+    : rows
+
+  const sorted = [...filtered].sort((a, b) => {
     const va = sortValue(a, sortKey)
     const vb = sortValue(b, sortKey)
     const cmp = typeof va === 'string' && typeof vb === 'string' ? va.localeCompare(vb) : (va as number) - (vb as number)
@@ -61,39 +70,57 @@ export function PositionsTable({ rows }: { rows: PortfolioRow[] }) {
   }
 
   return (
-    <div className="positions-table-wrapper scroll-thin">
-      <table className="positions-table">
-        <thead>
-          <tr>
-            {COLUMNS.map((col) => (
-              <th
-                key={col.key}
-                className={`sortable-th ${col.num ? 'num' : ''}`}
-                onClick={() => handleSort(col.key)}
-              >
-                {col.label}
-                {sortKey === col.key && <span className="sort-arrow">{sortDir === 'asc' ? ' ▲' : ' ▼'}</span>}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((row) => (
-            <PositionRow
-              key={row.symbol}
-              row={row}
-              expanded={expanded === row.symbol}
-              onToggle={() => setExpanded(expanded === row.symbol ? null : row.symbol)}
-            />
-          ))}
-        </tbody>
-      </table>
+    <div>
+      <input
+        className="table-search"
+        type="search"
+        placeholder="Buscar por símbolo o nombre…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+      <div className="positions-table-wrapper scroll-thin">
+        <table className="positions-table">
+          <thead>
+            <tr>
+              {COLUMNS.map((col) => (
+                <th
+                  key={col.key}
+                  className={`sortable-th ${col.num ? 'num' : ''}`}
+                  onClick={() => handleSort(col.key)}
+                >
+                  {col.label}
+                  {sortKey === col.key && <span className="sort-arrow">{sortDir === 'asc' ? ' ▲' : ' ▼'}</span>}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="empty-state">
+                  Sin resultados para "{query}".
+                </td>
+              </tr>
+            ) : (
+              sorted.map((row) => (
+                <PositionRow
+                  key={row.symbol}
+                  row={row}
+                  expanded={expanded === row.symbol}
+                  onToggle={() => setExpanded(expanded === row.symbol ? null : row.symbol)}
+                />
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
 
 function PositionRow({ row, expanded, onToggle }: { row: PortfolioRow; expanded: boolean; onToggle: () => void }) {
   const tone = (row.unrealizedPnlEur ?? 0) >= 0 ? 'positive' : 'negative'
+  const isStale = isPriceStale(row.priceFetchedAt)
 
   return (
     <>
@@ -115,6 +142,11 @@ function PositionRow({ row, expanded, onToggle }: { row: PortfolioRow; expanded:
             <>
               {row.currentPriceNative.toLocaleString('es-ES', { maximumFractionDigits: 4 })}{' '}
               {row.currentCurrency}
+              {isStale && (
+                <span className="stale-badge" title={`Precio de ${new Date(row.priceFetchedAt!).toLocaleString('es-ES')} — desactualizado`}>
+                  ⏱
+                </span>
+              )}
             </>
           ) : (
             <span className="card-hint">sin precio</span>
