@@ -1,34 +1,48 @@
 export const config = { runtime: 'edge' }
 
 /**
- * Resuelve el logo de una empresa vía Twelve Data (/logo?symbol=...) — solo
- * este paso de resolución necesita la API key; la imagen en sí que devuelve
- * (api.twelvedata.com/logo/{dominio}) es pública, así que el cliente la
- * carga directamente sin pasar otra vez por aquí.
+ * Proxy same-origin del logo de una empresa (Twelve Data): a diferencia de
+ * la versión anterior, aquí también se descarga la IMAGEN en el servidor y
+ * se retransmite — el navegador nunca llega a pedir nada directamente a
+ * api.twelvedata.com. Necesario porque algunas redes (p.ej. corporativas)
+ * bloquean la conexión directa del navegador a ese dominio de terceros
+ * aunque las peticiones a nuestro propio proxy (precios, tipo de cambio)
+ * funcionen sin problema.
  */
 export default async function handler(request: Request): Promise<Response> {
   const apiKey = process.env.TWELVE_DATA_API_KEY
-  if (!apiKey) return Response.json({ error: 'Sin API key configurada' }, { status: 500 })
+  if (!apiKey) return new Response(null, { status: 404 })
 
   const url = new URL(request.url)
   const symbol = url.searchParams.get('symbol')
   const exchange = url.searchParams.get('exchange')
-  if (!symbol) return Response.json({ error: 'Falta el parámetro symbol' }, { status: 400 })
-
-  const upstream = new URL('https://api.twelvedata.com/logo')
-  upstream.searchParams.set('symbol', symbol)
-  upstream.searchParams.set('apikey', apiKey)
-  if (exchange) upstream.searchParams.set('exchange', exchange)
+  if (!symbol) return new Response(null, { status: 400 })
 
   try {
-    const res = await fetch(upstream)
-    if (!res.ok) return Response.json({ error: `Twelve Data respondió ${res.status}` }, { status: 502 })
-    const data = await res.json()
-    if (data.status === 'error' || typeof data.url !== 'string') {
-      return Response.json({ error: 'Sin logo disponible para este símbolo' }, { status: 404 })
+    const meta = new URL('https://api.twelvedata.com/logo')
+    meta.searchParams.set('symbol', symbol)
+    meta.searchParams.set('apikey', apiKey)
+    if (exchange) meta.searchParams.set('exchange', exchange)
+
+    const metaRes = await fetch(meta)
+    if (!metaRes.ok) return new Response(null, { status: 404 })
+    const metaData = await metaRes.json()
+    if (metaData.status === 'error' || typeof metaData.url !== 'string') {
+      return new Response(null, { status: 404 })
     }
-    return Response.json({ url: data.url })
-  } catch (err) {
-    return Response.json({ error: err instanceof Error ? err.message : String(err) }, { status: 502 })
+
+    const imgRes = await fetch(metaData.url)
+    if (!imgRes.ok || !imgRes.body) return new Response(null, { status: 404 })
+
+    return new Response(imgRes.body, {
+      status: 200,
+      headers: {
+        'Content-Type': imgRes.headers.get('content-type') ?? 'image/png',
+        // Los logos no cambian casi nunca — cachear un día es seguro.
+        'Cache-Control': 'public, max-age=86400',
+      },
+    })
+  } catch {
+    return new Response(null, { status: 502 })
   }
 }
