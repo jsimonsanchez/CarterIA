@@ -1,3 +1,4 @@
+import { useLogos } from '../hooks/useLogos'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { formatEur } from '../utils/format'
 
@@ -8,6 +9,8 @@ export function DayMoversPanel({ rows }: { rows: PortfolioRow[] }) {
     .filter((r) => r.dayChangePct !== undefined)
     .sort((a, b) => Math.abs(b.dayChangePct!) - Math.abs(a.dayChangePct!))
     .slice(0, MAX_MOVERS)
+
+  const logos = useLogos(movers.map((m) => m.symbol))
 
   if (movers.length === 0) return null
 
@@ -20,10 +23,23 @@ export function DayMoversPanel({ rows }: { rows: PortfolioRow[] }) {
       <div className="movers-grid">
         {movers.map((row) => {
           const up = (row.dayChangePct ?? 0) >= 0
+          const logo = logos[row.symbol]
           return (
             <div key={row.symbol} className={`mover-card ${up ? 'mover-up' : 'mover-down'}`}>
               <div className="mover-top">
-                <span className="mover-symbol">{row.symbol}</span>
+                <span className="mover-symbol-group">
+                  {logo && (
+                    <img
+                      src={logo}
+                      alt=""
+                      className="mover-logo"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none'
+                      }}
+                    />
+                  )}
+                  <span className="mover-symbol">{row.symbol}</span>
+                </span>
                 <span className="mover-arrow">{up ? '▲' : '▼'}</span>
               </div>
               <span className="mover-pct">

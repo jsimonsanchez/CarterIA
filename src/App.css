@@ -50,10 +50,29 @@
   justify-content: space-between;
 }
 
+.mover-symbol-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.mover-logo {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  object-fit: contain;
+  background: #fff;
+  flex-shrink: 0;
+}
+
 .mover-symbol {
   font-weight: 700;
   font-size: 14px;
   color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mover-up .mover-arrow {
