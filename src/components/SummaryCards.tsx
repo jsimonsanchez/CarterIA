@@ -1,26 +1,68 @@
+import { useLiveQuery } from 'dexie-react-hooks'
+import { db } from '../db/db'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { formatEur, formatPct } from '../utils/format'
 
 export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
+  const closedTrades = useLiveQuery(() => db.closedTrades.toArray(), []) ?? []
+  const transactions = useLiveQuery(() => db.transactions.toArray(), []) ?? []
+
   const costBasis = sum(rows, (r) => r.costBasis)
   const withPrice = rows.filter((r) => r.marketValueEur !== undefined)
   const marketValue = sum(withPrice, (r) => r.marketValueEur ?? 0)
   const unrealizedPnl = sum(withPrice, (r) => r.unrealizedPnlEur ?? 0)
-  const pnlPct = costBasis > 0 ? (unrealizedPnl / costBasis) * 100 : undefined
+  const unrealizedPct = costBasis > 0 ? (unrealizedPnl / costBasis) * 100 : undefined
   const missingPrices = rows.length - withPrice.length
+
+  const realizedPnl = sum(closedTrades, (t) => t.realizedPnlEur)
+  const realizedCost = sum(closedTrades, (t) => t.purchaseValueEur)
+  const realizedPct = realizedCost > 0 ? (realizedPnl / realizedCost) * 100 : undefined
+
+  const dividends = sum(
+    transactions.filter((t) => t.type === 'dividend'),
+    (t) => t.total,
+  )
+  const interest = sum(
+    transactions.filter((t) => t.type === 'interest'),
+    (t) => t.total,
+  )
+
+  const total = unrealizedPnl + realizedPnl + dividends + interest
+  const totalCost = costBasis + realizedCost
+  const totalPct = totalCost > 0 ? (total / totalCost) * 100 : undefined
 
   return (
     <section className="summary-cards">
       <Card label="Valor de mercado" value={formatEur(marketValue)} hint={missingPrices > 0 ? `${missingPrices} sin precio` : undefined} />
       <Card label="Coste de la cartera" value={formatEur(costBasis)} />
-      <Card
-        label="Plusvalía no realizada"
-        value={formatEur(unrealizedPnl)}
-        sub={pnlPct !== undefined ? formatPct(pnlPct) : undefined}
-        tone={unrealizedPnl >= 0 ? 'positive' : 'negative'}
-      />
+      <div className="card">
+        <PnlLine label="Plusvalía no realizada" value={unrealizedPnl} pct={unrealizedPct} />
+        <PnlLine label="Plusvalías realizadas" value={realizedPnl} pct={realizedPct} />
+        <PnlLine label="Total (+ dividendos e intereses)" value={total} pct={totalPct} emphasized />
+      </div>
       <Card label="Posiciones abiertas" value={String(rows.length)} />
     </section>
+  )
+}
+
+function PnlLine({
+  label,
+  value,
+  pct,
+  emphasized,
+}: {
+  label: string
+  value: number
+  pct?: number
+  emphasized?: boolean
+}) {
+  const tone = value >= 0 ? 'positive' : 'negative'
+  return (
+    <div className={`pnl-line ${emphasized ? 'pnl-line-total' : ''}`}>
+      <span className="card-label">{label}</span>
+      <span className={`card-value ${tone}`}>{formatEur(value)}</span>
+      {pct !== undefined && <span className={`card-sub ${tone}`}>{formatPct(pct)}</span>}
+    </div>
   )
 }
 
