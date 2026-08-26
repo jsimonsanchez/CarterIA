@@ -28,7 +28,12 @@ export interface XtbImportWarning {
   message: string
 }
 
-/** Fila de la hoja "Cash Operations" ignorada a propósito (fila de totales, filas vacías de cierre de hoja). */
+/**
+ * Fila de la hoja "Cash Operations" que no se pudo procesar de forma
+ * inesperada — no incluye los descartes normales (fila de totales, filas
+ * vacías de cierre de hoja), que no llegan a registrarse aquí porque no son
+ * un problema.
+ */
 export interface XtbSkippedRow {
   /** Número de fila tal cual en el .xlsx (para poder localizarla abriendo el extracto). */
   row: number
@@ -84,12 +89,11 @@ export async function parseXtbWorkbook(buffer: ArrayBuffer): Promise<XtbImportRe
     try {
       const rawType = row.getCell(idxType).text?.trim()
       // Comparación insensible a mayúsculas: se ha visto la fila de totales
-      // como "Total" y como "TOTAL" según la exportación.
+      // como "Total" y como "TOTAL" según la exportación. Es un descarte
+      // esperado (fila de totales o fila vacía de cierre de hoja), no un
+      // problema — no se registra en skippedRows para no dar a entender que
+      // hace falta revisar algo.
       if (!rawType || rawType.toLowerCase() === 'total') {
-        skippedRows.push({
-          row: rowNumber,
-          reason: rawType ? 'Fila de totales' : 'Fila sin tipo de operación (vacía)',
-        })
         return
       }
 
