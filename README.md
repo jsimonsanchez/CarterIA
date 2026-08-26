@@ -87,8 +87,8 @@ Cada dato tiene una alternativa, porque los proveedores gratuitos fallan:
 
 - **Precios**: Yahoo Finance → Twelve Data → última cotización guardada.
   Yahoo va primero porque no tiene cuota; Twelve Data limita a 800 consultas
-  diarias, que con una cartera de 27 posiciones se agotan en unas 29
-  actualizaciones.
+  diarias, y cada actualización gasta una por posición, así que se agota
+  enseguida.
 - **Logos**: Financial Modeling Prep → Twelve Data. Se resuelve **una sola vez por
   valor** y se guarda: los logos no cambian, y así no se gasta cuota en cada visita.
 - **Tipos de cambio**: Frankfurter (datos del BCE), cacheados una hora.
