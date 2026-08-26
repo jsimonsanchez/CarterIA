@@ -81,13 +81,13 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
           sub={`Posiciones abiertas ${rows.length}`}
         />
         <Stat
-          label="Plusvalía no realizada"
+          label="Plusvalía Latente"
           value={formatEur(unrealizedPnl)}
           sub={unrealizedPct !== undefined ? formatPct(unrealizedPct) : undefined}
           tone={unrealizedPnl >= 0 ? 'positive' : 'negative'}
         />
         <Stat
-          label="Plusvalías realizadas"
+          label="Plusvalía"
           value={formatEur(realizedPnl)}
           sub={realizedPct !== undefined ? formatPct(realizedPct) : undefined}
           tone={realizedPnl >= 0 ? 'positive' : 'negative'}
