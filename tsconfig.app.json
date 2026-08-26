@@ -22,5 +22,9 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  /* Los tests corren en Node (node:test), no en el navegador — se
+     type-chequean aparte en tsconfig.test.json, que sí trae los tipos de
+     Node. Aquí se excluyen para que la app siga siendo solo DOM. */
+  "exclude": ["src/**/*.test.ts"]
 }

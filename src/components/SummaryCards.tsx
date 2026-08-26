@@ -3,12 +3,20 @@ import { useMemo } from 'react'
 import { db } from '../db/db'
 import { isPriceStale } from '../domain/priceFreshness'
 import { modifiedDietzAnnualized, xirr } from '../domain/xirr'
+import type { ClosedTrade, Transaction } from '../domain/types'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { formatEur, formatPct } from '../utils/format'
 
+// Constantes a nivel de módulo, no literales `[]` en el cuerpo del
+// componente: un literal crea un array nuevo en cada render mientras la
+// consulta a Dexie está resolviéndose, lo que rompería la memoización del
+// XIRR de más abajo (su dependencia cambiaría siempre).
+const NO_TRADES: ClosedTrade[] = []
+const NO_TRANSACTIONS: Transaction[] = []
+
 export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
-  const closedTrades = useLiveQuery(() => db.closedTrades.toArray(), []) ?? []
-  const transactions = useLiveQuery(() => db.transactions.toArray(), []) ?? []
+  const closedTrades = useLiveQuery(() => db.closedTrades.toArray(), []) ?? NO_TRADES
+  const transactions = useLiveQuery(() => db.transactions.toArray(), []) ?? NO_TRANSACTIONS
 
   // Cada transacción ya trae su importe neto en EUR (ingresos +, compras −,
   // ventas +, dividendos +, intereses +, comisiones −), así que sumar todo
