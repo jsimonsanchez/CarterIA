@@ -37,6 +37,8 @@ export interface PriceCacheEntry {
   fetchedAt: string // ISO 8601
   /** Cierre de la sesión anterior — el % de variación diaria es el mismo en cualquier divisa, no hace falta convertir a EUR. */
   previousClose?: number
+  /** false cuando el mercado de este valor todavía no ha abierto hoy y "price" sigue siendo el cierre de la sesión anterior — evita calcular la variación diaria con datos de ayer. undefined = desconocido (se trata como fresco). */
+  isTodaySession?: boolean
 }
 
 /**

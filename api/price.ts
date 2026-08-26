@@ -6,6 +6,16 @@ interface PriceResult {
   source: 'twelvedata' | 'yahoo'
   /** Cierre de la sesión anterior, para calcular la variación del día — mismo % con cualquier divisa, no hace falta convertir. */
   previousClose?: number
+  /**
+   * Si el precio/cierre-anterior corresponden ya a la sesión de HOY (mercado
+   * abierto o ya cerrado hoy) frente a la última sesión disponible cuando el
+   * mercado de ese valor concreto todavía no ha abierto (p.ej. bolsa de
+   * EEUU consultada por la mañana en España) — en ese caso "price" sigue
+   * siendo el cierre de ayer y calcular la variación diaria daría el cambio
+   * de ayer, no el de hoy. `undefined` cuando el proveedor no da datos
+   * suficientes para saberlo (se trata como fresco, para no ocultar de más).
+   */
+  isTodaySession?: boolean
 }
 
 // Yahoo devuelve 403/429 sin una cabecera User-Agent de navegador real.
@@ -29,11 +39,13 @@ async function fetchTwelveData(symbol: string, exchange: string | null): Promise
     // cuota o el símbolo no existe, en vez de un código HTTP de error.
     if (data.status === 'error' || !data.close || !data.currency) return null
     const previousClose = Number(data.previous_close)
+    const today = new Date().toISOString().slice(0, 10)
     return {
       price: Number(data.close),
       currency: data.currency,
       source: 'twelvedata',
       previousClose: Number.isFinite(previousClose) ? previousClose : undefined,
+      isTodaySession: data.is_market_open === true || data.datetime === today,
     }
   } catch {
     return null
@@ -55,7 +67,21 @@ async function fetchYahooFromHost(host: string, symbol: string): Promise<PriceRe
     const currency = result?.meta?.currency
     const previousClose = result?.meta?.previousClose ?? result?.meta?.chartPreviousClose
     if (typeof price !== 'number' || !currency) return null
-    return { price, currency, source: 'yahoo', previousClose: typeof previousClose === 'number' ? previousClose : undefined }
+
+    const regularMarketTime = result?.meta?.regularMarketTime
+    const regularSessionStart = result?.meta?.currentTradingPeriod?.regular?.start
+    const isTodaySession =
+      typeof regularMarketTime === 'number' && typeof regularSessionStart === 'number'
+        ? regularMarketTime >= regularSessionStart
+        : undefined
+
+    return {
+      price,
+      currency,
+      source: 'yahoo',
+      previousClose: typeof previousClose === 'number' ? previousClose : undefined,
+      isTodaySession,
+    }
   } catch {
     return null
   }

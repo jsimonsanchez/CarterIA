@@ -69,7 +69,11 @@ export function usePortfolioRows() {
 
             let dayChangePct: number | undefined
             let dayChangeEur: number | undefined
-            if (price.previousClose && price.previousClose > 0) {
+            // Si el mercado de este valor aún no ha abierto hoy, "price" sigue
+            // siendo el cierre de ayer: calcular la variación daría el cambio de
+            // ayer disfrazado de "hoy" — se omite para no mezclarlo con valores
+            // de otros mercados que sí llevan ya sesión abierta.
+            if (price.previousClose && price.previousClose > 0 && price.isTodaySession !== false) {
               dayChangePct = ((price.price - price.previousClose) / price.previousClose) * 100
               const previousCloseEur = await convertToEur(price.previousClose, price.currency)
               dayChangeEur = pos.quantity * (currentPriceEur - previousCloseEur)
