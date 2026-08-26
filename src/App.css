@@ -258,55 +258,39 @@
   font-size: 14px;
 }
 
-.summary-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-}
-
-.stat-tile {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 14px 16px;
+/* Un único panel con todas las cifras de resumen, en vez de varias tarjetas
+   sueltas — evita tanto el "cada dato en su caja" (demasiado fragmentado)
+   como el hueco en blanco que deja una tarjeta más corta que su vecina al
+   tener que igualar la altura de la más alta. */
+.summary-panel {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  gap: 16px;
+}
+
+.summary-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.summary-hero .card-value {
+  font-size: 32px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px 24px;
+}
+
+.summary-stat {
+  display: flex;
+  flex-direction: column;
   gap: 3px;
-  box-shadow: var(--shadow-sm);
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.15s ease;
-}
-
-.stat-tile:hover {
-  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
-
-/* La tarjeta con el importe total lleva más información (posiciones,
-   liquidez) y es la cifra que más importa de un vistazo — ocupa dos
-   columnas y un ligero tinte de acento para destacar sobre el resto. */
-.stat-tile-hero {
-  grid-column: span 2;
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 6%, var(--surface)), var(--surface));
-}
-
-.stat-tile-hero .card-value {
-  font-size: 26px;
-}
-
-.stat-tile-emphasized {
-  background: color-mix(in srgb, var(--positive) 4%, var(--surface));
-}
-
-@media (max-width: 640px) {
-  .stat-tile-hero {
-    grid-column: 1 / -1;
-  }
+  min-width: 0;
 }
 
 .card-label {
@@ -323,10 +307,6 @@
   letter-spacing: -0.01em;
   color: var(--text-h);
   font-variant-numeric: tabular-nums;
-}
-
-.stat-tile .card-value {
-  font-size: 20px;
 }
 
 .card-sub {

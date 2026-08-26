@@ -62,82 +62,74 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
   const annualizedRate = xirrRate ?? (usedFallback ? modifiedDietzAnnualized(allFlows) : undefined)
   const xirrPct = annualizedRate !== undefined ? annualizedRate * 100 : undefined
 
+  const priceHint = buildPriceHint(missingPrices, stalePrices)
+
   return (
-    <section className="summary-cards">
-      <StatTile
-        hero
-        label="Valor Total"
-        value={formatEur(marketValue + cashBalance)}
-        sub={`Posiciones ${formatEur(marketValue)} · Liquidez ${formatEur(cashBalance)}`}
-        hint={buildPriceHint(missingPrices, stalePrices)}
-      />
-      <StatTile label="Coste de la cartera" value={formatEur(costBasis)} />
-      <StatTile label="Posiciones abiertas" value={String(rows.length)} />
-      <StatTile
-        label="Plusvalía no realizada"
-        value={formatEur(unrealizedPnl)}
-        sub={unrealizedPct !== undefined ? formatPct(unrealizedPct) : undefined}
-        tone={unrealizedPnl >= 0 ? 'positive' : 'negative'}
-      />
-      <StatTile
-        label="Plusvalías realizadas"
-        value={formatEur(realizedPnl)}
-        sub={realizedPct !== undefined ? formatPct(realizedPct) : undefined}
-        tone={realizedPnl >= 0 ? 'positive' : 'negative'}
-      />
-      <StatTile
-        emphasized
-        label="Total (+ dividendos e intereses)"
-        value={formatEur(total)}
-        sub={totalPct !== undefined ? formatPct(totalPct) : undefined}
-        tone={total >= 0 ? 'positive' : 'negative'}
-      />
-      {xirrPct !== undefined && (
-        <StatTile
-          emphasized
-          label={`Rentabilidad anualizada ${usedFallback ? '(aprox.)' : '(XIRR)'}`}
-          value={formatPct(xirrPct)}
-          tone={xirrPct >= 0 ? 'positive' : 'negative'}
-          title={
-            usedFallback
-              ? 'Rentabilidad anualizada ponderada por dinero (aproximación, método Dietz modificado — el cálculo exacto XIRR no convergió con estos flujos).'
-              : 'Rentabilidad anualizada ponderada por dinero (XIRR): tiene en cuenta cuándo entró cada ingreso, no solo cuánto.'
-          }
+    <section className="panel summary-panel">
+      <div className="summary-hero">
+        <span className="card-label">Valor Total</span>
+        <span className="card-value">{formatEur(marketValue + cashBalance)}</span>
+        <span className="card-sub">
+          Posiciones {formatEur(marketValue)} · Liquidez {formatEur(cashBalance)}
+        </span>
+        {priceHint && <span className="card-hint">{priceHint}</span>}
+      </div>
+      <div className="summary-grid">
+        <Stat label="Coste de la cartera" value={formatEur(costBasis)} />
+        <Stat label="Posiciones abiertas" value={String(rows.length)} />
+        <Stat
+          label="Plusvalía no realizada"
+          value={formatEur(unrealizedPnl)}
+          sub={unrealizedPct !== undefined ? formatPct(unrealizedPct) : undefined}
+          tone={unrealizedPnl >= 0 ? 'positive' : 'negative'}
         />
-      )}
+        <Stat
+          label="Plusvalías realizadas"
+          value={formatEur(realizedPnl)}
+          sub={realizedPct !== undefined ? formatPct(realizedPct) : undefined}
+          tone={realizedPnl >= 0 ? 'positive' : 'negative'}
+        />
+        <Stat
+          label="Total (+ dividendos e intereses)"
+          value={formatEur(total)}
+          sub={totalPct !== undefined ? formatPct(totalPct) : undefined}
+          tone={total >= 0 ? 'positive' : 'negative'}
+        />
+        {xirrPct !== undefined && (
+          <Stat
+            label={`Rentabilidad anualizada ${usedFallback ? '(aprox.)' : '(XIRR)'}`}
+            value={formatPct(xirrPct)}
+            tone={xirrPct >= 0 ? 'positive' : 'negative'}
+            title={
+              usedFallback
+                ? 'Rentabilidad anualizada ponderada por dinero (aproximación, método Dietz modificado — el cálculo exacto XIRR no convergió con estos flujos).'
+                : 'Rentabilidad anualizada ponderada por dinero (XIRR): tiene en cuenta cuándo entró cada ingreso, no solo cuánto.'
+            }
+          />
+        )}
+      </div>
     </section>
   )
 }
 
-function StatTile({
+function Stat({
   label,
   value,
   sub,
-  hint,
   tone,
-  emphasized,
-  hero,
   title,
 }: {
   label: string
   value: string
   sub?: string
-  hint?: string
   tone?: 'positive' | 'negative'
-  emphasized?: boolean
-  hero?: boolean
   title?: string
 }) {
-  const classes = ['stat-tile']
-  if (hero) classes.push('stat-tile-hero')
-  if (emphasized) classes.push('stat-tile-emphasized')
-
   return (
-    <div className={classes.join(' ')} title={title}>
+    <div className="summary-stat" title={title}>
       <span className="card-label">{label}</span>
       <span className={`card-value ${tone ?? ''}`}>{value}</span>
       {sub && <span className={`card-sub ${tone ?? ''}`}>{sub}</span>}
-      {hint && <span className="card-hint">{hint}</span>}
     </div>
   )
 }
