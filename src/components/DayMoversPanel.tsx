@@ -1,6 +1,6 @@
 import { useLogos } from '../hooks/useLogos'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
-import { formatEur } from '../utils/format'
+import { formatEur, formatNativePrice } from '../utils/format'
 
 const MAX_MOVERS = 6
 
@@ -68,7 +68,9 @@ export function DayMoversPanel({ rows }: { rows: PortfolioRow[] }) {
               </span>
               <div className="mover-bottom">
                 <span className="mover-price">
-                  {row.currentPriceNative?.toLocaleString('es-ES', { maximumFractionDigits: 2 })} {row.currentCurrency}
+                  {row.currentPriceNative !== undefined &&
+                    row.currentCurrency !== undefined &&
+                    formatNativePrice(row.currentPriceNative, row.currentCurrency)}
                 </span>
                 {row.dayChangeEur !== undefined && (
                   <span className="mover-eur">

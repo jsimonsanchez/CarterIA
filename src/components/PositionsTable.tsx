@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { isPriceStale } from '../domain/priceFreshness'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
-import { formatEur, formatPct } from '../utils/format'
+import { formatEur, formatNativePrice, formatPct } from '../utils/format'
 import { PositionDetail } from './PositionDetail'
 
 type SortKey = 'symbol' | 'quantity' | 'averageCost' | 'price' | 'value' | 'pnl' | 'pnlPct'
@@ -157,8 +157,7 @@ function PositionRow({ row, expanded, onToggle }: { row: PortfolioRow; expanded:
             </span>
           ) : row.currentPriceNative !== undefined ? (
             <>
-              {row.currentPriceNative.toLocaleString('es-ES', { maximumFractionDigits: 4 })}{' '}
-              {row.currentCurrency}
+              {formatNativePrice(row.currentPriceNative, row.currentCurrency!)}
               {isStale && (
                 <span className="stale-badge" title={`Precio de ${new Date(row.priceFetchedAt!).toLocaleString('es-ES')} — desactualizado`}>
                   ⏱
