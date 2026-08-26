@@ -2,13 +2,17 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { Fragment, useState } from 'react'
 import { db } from '../db/db'
 import { cagr, MIN_DAYS_TO_ANNUALIZE } from '../domain/xirr'
+import { useLogos } from '../hooks/useLogos'
 import { formatDate, formatEur, formatPct } from '../utils/format'
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24
+const NO_SYMBOLS: string[] = []
 
 export function RealizedGainsPanel() {
   const trades = useLiveQuery(() => db.closedTrades.toArray(), [])
   const [openYear, setOpenYear] = useState<number | null>(null)
+  // Antes de cualquier early return: los hooks no pueden ser condicionales.
+  const logos = useLogos(trades ? [...new Set(trades.map((t) => t.symbol))] : NO_SYMBOLS)
 
   if (!trades) return null
 
@@ -97,7 +101,21 @@ export function RealizedGainsPanel() {
                                 return (
                                   <tr key={t.id}>
                                     <td>{formatDate(t.closeDate)}</td>
-                                    <td>{t.symbol}</td>
+                                    <td>
+                                      <span className="symbol-ticker">
+                                        {t.symbol}
+                                        {logos[t.symbol] && (
+                                          <img
+                                            src={logos[t.symbol]!}
+                                            alt=""
+                                            className="symbol-logo"
+                                            onError={(e) => {
+                                              e.currentTarget.style.display = 'none'
+                                            }}
+                                          />
+                                        )}
+                                      </span>
+                                    </td>
                                     <td className="num">{t.quantity.toLocaleString('es-ES', { maximumFractionDigits: 4 })}</td>
                                     <td className="num">{formatEur(t.purchaseValueEur)}</td>
                                     <td className="num">{formatEur(t.saleValueEur)}</td>

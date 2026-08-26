@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { isPriceStale } from '../domain/priceFreshness'
+import { useLogos } from '../hooks/useLogos'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { formatEur, formatNativePrice, formatPct } from '../utils/format'
 import { PositionDetail } from './PositionDetail'
@@ -48,6 +49,8 @@ export function PositionsTable({ rows, onRefresh, refreshing, refreshError }: Po
   const [sortKey, setSortKey] = useState<SortKey>('value')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [query, setQuery] = useState('')
+  // Antes del early return: los hooks no pueden llamarse condicionalmente.
+  const logos = useLogos(rows.map((r) => r.symbol))
 
   if (rows.length === 0) {
     return <p className="empty-state">Sin posiciones — importa un extracto de XTB para empezar.</p>
@@ -119,6 +122,7 @@ export function PositionsTable({ rows, onRefresh, refreshing, refreshError }: Po
                 <PositionRow
                   key={row.symbol}
                   row={row}
+                  logo={logos[row.symbol]}
                   expanded={expanded === row.symbol}
                   onToggle={() => setExpanded(expanded === row.symbol ? null : row.symbol)}
                 />
@@ -131,7 +135,17 @@ export function PositionsTable({ rows, onRefresh, refreshing, refreshError }: Po
   )
 }
 
-function PositionRow({ row, expanded, onToggle }: { row: PortfolioRow; expanded: boolean; onToggle: () => void }) {
+function PositionRow({
+  row,
+  logo,
+  expanded,
+  onToggle,
+}: {
+  row: PortfolioRow
+  logo?: string | null
+  expanded: boolean
+  onToggle: () => void
+}) {
   const tone = (row.unrealizedPnlEur ?? 0) >= 0 ? 'positive' : 'negative'
   const isStale = isPriceStale(row.priceFetchedAt)
 
@@ -140,7 +154,19 @@ function PositionRow({ row, expanded, onToggle }: { row: PortfolioRow; expanded:
       <tr className="position-row" onClick={onToggle}>
         <td>
           <div className="symbol-cell">
-            <strong>{row.symbol}</strong>
+            <span className="symbol-ticker">
+              <strong>{row.symbol}</strong>
+              {logo && (
+                <img
+                  src={logo}
+                  alt=""
+                  className="symbol-logo"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                  }}
+                />
+              )}
+            </span>
             {row.name && (
               <span className="symbol-name" title={row.name}>
                 {row.name}
