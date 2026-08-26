@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo } from 'react'
 import { db } from '../db/db'
+import { totalReturn } from '../domain/performance'
 import { isPriceStale } from '../domain/priceFreshness'
 import { modifiedDietzAnnualized, xirr } from '../domain/xirr'
 import type { ClosedTrade, Transaction } from '../domain/types'
@@ -41,21 +42,17 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
   const realizedCostBasis = sum(closedTrades, (t) => t.purchaseValueEur)
   const realizedPct = realizedCostBasis > 0 ? (realizedPnl / realizedCostBasis) * 100 : undefined
 
-  const dividends = sum(
-    transactions.filter((t) => t.type === 'dividend'),
+  // Rendimiento de todo el dinero aportado al bróker: ingresas 100.000 € y
+  // hoy tienes 200.000 € entre posiciones y liquidez → 100%. No se suman
+  // los conceptos por separado (plusvalías + dividendos + intereses...)
+  // porque el valor de la cartera ya los recoge todos: lo que no está
+  // invertido está en caja.
+  const totalDeposits = sum(
+    transactions.filter((t) => t.type === 'deposit'),
     (t) => t.total,
   )
-  const interest = sum(
-    transactions.filter((t) => t.type === 'interest'),
-    (t) => t.total,
-  )
-
-  // El total abarca posiciones abiertas y cerradas, así que su base es todo
-  // el capital que ha llegado a estar invertido: lo que hay puesto hoy más
-  // lo que costaron en su día las operaciones ya cerradas.
-  const total = unrealizedPnl + realizedPnl + dividends + interest
-  const totalInvestedBasis = costBasis + realizedCostBasis
-  const totalPct = totalInvestedBasis > 0 ? (total / totalInvestedBasis) * 100 : undefined
+  const portfolioValue = marketValue + cashBalance
+  const { gain: total, pct: totalPct } = totalReturn(portfolioValue, totalDeposits)
 
   // XIRR: rentabilidad anualizada ponderada por dinero. Flujos = cada
   // ingreso (negativo, sale del bolsillo del inversor) + el valor actual de
@@ -95,7 +92,7 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
       <div className="summary-grid">
         <div className="summary-stat">
           <span className="card-label">Valor Total</span>
-          <span className="card-value">{formatEur(marketValue + cashBalance)}</span>
+          <span className="card-value">{formatEur(portfolioValue)}</span>
           <span className="card-sub">
             Posiciones {formatEur(marketValue)} · Liquidez {formatEur(cashBalance)}
           </span>
@@ -123,6 +120,7 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
           value={formatEur(total)}
           sub={totalPct !== undefined ? formatPct(totalPct) : undefined}
           tone={total >= 0 ? 'positive' : 'negative'}
+          title={`Rendimiento de todo lo aportado: ${formatEur(portfolioValue)} de valor actual frente a ${formatEur(totalDeposits)} de ingresos de efectivo.`}
         />
         {xirrPct !== undefined && (
           <Stat
