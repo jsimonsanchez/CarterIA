@@ -348,7 +348,7 @@
   /* Ancho fijo (no proporcional) para el gráfico: así la tabla se queda con
      todo el espacio sobrante y no pierde columnas por su culpa en pantallas
      anchas. */
-  grid-template-columns: minmax(0, 1fr) 115px;
+  grid-template-columns: minmax(0, 1fr) 150px;
   gap: 20px;
   align-items: start;
 }
@@ -438,7 +438,7 @@
 .symbol-name {
   font-size: 12px;
   color: var(--text-muted);
-  max-width: 220px;
+  max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
