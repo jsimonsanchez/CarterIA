@@ -84,8 +84,24 @@ function App() {
         </div>
         <div className="tabs-right">
           <ImportButton state={importState} />
-          <button className="button button-sm button-danger" onClick={handleClearAll}>
-            Borrar todo
+          <button
+            className="button button-sm button-danger"
+            onClick={handleClearAll}
+            // En móvil solo queda el icono, así que el nombre de la acción
+            // tiene que llegar igual a quien navegue con lector de pantalla.
+            aria-label="Borrar todo"
+            title="Borrar todo"
+          >
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M2.5 4h11M6.5 4V2.5h3V4M4 4l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L12 4"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className="clear-btn-label">Borrar todo</span>
           </button>
         </div>
       </nav>

@@ -205,6 +205,9 @@
 /* Contorno en vez de relleno: una acción destructiva y poco frecuente no
    debe competir visualmente con el resto de botones de la cabecera. */
 .button-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: transparent;
   color: var(--negative);
   border: 1px solid color-mix(in srgb, var(--negative) 45%, transparent);
@@ -224,6 +227,39 @@
 @media (max-width: 640px) {
   .import-btn-suffix {
     display: none;
+  }
+
+  /* La fila de pestañas no cabe en 375px con los dos botones enteros y
+     empujaba la página entera hacia los lados. "Borrar todo" se queda solo
+     con el icono; el texto sigue disponible para lectores de pantalla vía
+     aria-label. */
+  .clear-btn-label {
+    display: none;
+  }
+
+  .button-danger {
+    padding: 9px 11px;
+  }
+
+  /* Selector más específico a propósito: la regla base `.tab` se declara
+     más abajo en el archivo y, a igualdad de especificidad, ganaría por
+     orden de aparición. */
+  .tabs-left .tab {
+    margin-right: 10px;
+  }
+
+  /* En una pantalla estrecha, el margen lateral de la app y los huecos
+     entre botones son espacio que le hace falta a la fila de pestañas. */
+  .app {
+    padding: 24px 14px 56px;
+  }
+
+  .tabs {
+    gap: 8px;
+  }
+
+  .tabs-right {
+    gap: 6px;
   }
 }
 
