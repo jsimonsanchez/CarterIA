@@ -234,9 +234,6 @@
 .info-popover {
   max-width: min(340px, calc(100vw - 32px));
   padding: 16px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
@@ -247,6 +244,16 @@
   text-transform: none;
   letter-spacing: normal;
   font-weight: 400;
+}
+
+/* El `display` va SOLO en el estado abierto. El navegador oculta un popover
+   cerrado con `display: none`, pero los estilos del autor mandan sobre los
+   suyos: declarar `display: flex` en la regla base lo anulaba y el panel se
+   veía siempre, incluso sin haberlo abierto. */
+.info-popover:popover-open {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .info-popover-head {
