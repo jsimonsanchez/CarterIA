@@ -161,6 +161,13 @@ function PositionRow({
                   src={logo}
                   alt=""
                   className="symbol-logo"
+                  // Se muestra a 16px: con las medidas declaradas y carga
+                  // diferida, los logos de las filas que quedan fuera de
+                  // pantalla no se descargan ni se decodifican.
+                  width={16}
+                  height={16}
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none'
                   }}

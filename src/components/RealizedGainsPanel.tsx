@@ -109,6 +109,10 @@ export function RealizedGainsPanel() {
                                             src={logos[t.symbol]!}
                                             alt=""
                                             className="symbol-logo"
+                                            width={16}
+                                            height={16}
+                                            loading="lazy"
+                                            decoding="async"
                                             onError={(e) => {
                                               e.currentTarget.style.display = 'none'
                                             }}

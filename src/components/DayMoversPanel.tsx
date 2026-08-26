@@ -53,6 +53,9 @@ export function DayMoversPanel({ rows }: { rows: PortfolioRow[] }) {
                       src={logo}
                       alt=""
                       className="mover-logo"
+                      width={18}
+                      height={18}
+                      decoding="async"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none'
                       }}
