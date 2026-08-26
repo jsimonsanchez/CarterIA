@@ -345,7 +345,10 @@
 
 .main-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  /* Ancho fijo (no proporcional) para el gráfico: así la tabla se queda con
+     todo el espacio sobrante y no pierde columnas por su culpa en pantallas
+     anchas. */
+  grid-template-columns: minmax(0, 1fr) 260px;
   gap: 20px;
   align-items: start;
 }
@@ -524,24 +527,24 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 18px;
+  padding: 16px;
   box-shadow: var(--shadow-sm);
 }
 
 .chart-legend {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 14px;
-  padding-top: 14px;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid var(--border);
 }
 
 .chart-legend-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 12px;
 }
 
 .chart-legend-swatch {
