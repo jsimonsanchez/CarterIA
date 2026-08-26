@@ -99,9 +99,8 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
         <div className="summary-stat">
           <span className="card-label">Valor Total</span>
           <span className="card-value">{formatEur(portfolioValue)}</span>
-          <span className="card-sub">
-            Posiciones {formatEur(marketValue)} · Liquidez {formatEur(cashBalance)}
-          </span>
+          <span className="card-sub">Posiciones {formatEur(marketValue)}</span>
+          <span className="card-sub">Liquidez {formatEur(cashBalance)}</span>
           {priceHint && <span className="card-hint">{priceHint}</span>}
         </div>
         <Stat
