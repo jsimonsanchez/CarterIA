@@ -106,6 +106,14 @@ async function fetchYahoo(symbol: string): Promise<PriceResult | null> {
  * Twelve Data ni a Yahoo directamente (ninguno de los dos permite CORS desde
  * un origen de navegador), y la API key de Twelve Data se queda en el
  * servidor en vez de ir embebida en el bundle del cliente.
+ *
+ * Yahoo va primero y Twelve Data queda como respaldo. El orden era el
+ * inverso, pero el plan gratuito de Twelve Data ya rechazaba la mayoría de
+ * plazas europeas —así que se acababa consultando a Yahoo igualmente, tras
+ * gastar un crédito— y su límite diario (800) se agota con ~29 pulsaciones
+ * de "Actualizar precios" en una cartera de 27 posiciones. Al agotarse
+ * dejaban de funcionar también los logos, que dependen del mismo crédito y
+ * no tienen alternativa en Yahoo. Yahoo no pide clave ni tiene cuota.
  */
 export default async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url)
@@ -117,14 +125,14 @@ export default async function handler(request: Request): Promise<Response> {
     return Response.json({ error: 'Faltan parámetros twelveDataSymbol/yahooSymbol' }, { status: 400 })
   }
 
-  const fromTwelveData = await fetchTwelveData(twelveDataSymbol, twelveDataExchange)
-  if (fromTwelveData) {
-    return Response.json(fromTwelveData)
-  }
-
   const fromYahoo = await fetchYahoo(yahooSymbol)
   if (fromYahoo) {
     return Response.json(fromYahoo)
+  }
+
+  const fromTwelveData = await fetchTwelveData(twelveDataSymbol, twelveDataExchange)
+  if (fromTwelveData) {
+    return Response.json(fromTwelveData)
   }
 
   return Response.json({ error: 'No se pudo obtener precio de ningún proveedor' }, { status: 502 })

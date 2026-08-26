@@ -36,15 +36,20 @@ function App() {
 
   async function handleClearAll() {
     const confirmed = window.confirm(
-      'Se borrará toda la información de Cartera Tracker en este dispositivo (posiciones, movimientos, operaciones cerradas y precios en caché). Esta acción no se puede deshacer. ¿Continuar?',
+      'Se borrará tu cartera de este dispositivo: posiciones, movimientos, operaciones cerradas y precios en caché. ' +
+        'Se conserva la tabla de símbolos (nombres y logos de las empresas), que no son datos tuyos y cuesta ' +
+        'crédito de la API volver a descargarlos. Esta acción no se puede deshacer. ¿Continuar?',
     )
     if (!confirmed) return
 
+    // symbolMappings se conserva a propósito: no contiene datos de la
+    // cartera, solo la equivalencia de tickers entre proveedores más el
+    // nombre y el logo ya descargados. Borrarla obligaría a volver a gastar
+    // crédito de Twelve Data en resolver cada logo.
     await Promise.all([
       db.transactions.clear(),
       db.positions.clear(),
       db.priceCache.clear(),
-      db.symbolMappings.clear(),
       db.closedTrades.clear(),
     ])
   }

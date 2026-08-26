@@ -74,13 +74,19 @@ async function resolveLogoUrl(symbol: string, exchange: string | null): Promise<
     if (exchange) meta.searchParams.set('exchange', exchange)
 
     const metaRes = await fetch(meta)
-    if (!metaRes.ok) return new Response(null, { status: 404 })
-    const metaData = await metaRes.json()
 
-    // Se agota la cuota diaria del plan gratuito con un 200 + {status:"error"}.
-    // Hay que distinguirlo de "este símbolo no tiene logo": lo primero es
-    // temporal y conviene reintentarlo, lo segundo es permanente y el cliente
-    // debe dejar de preguntar.
+    // La cuota agotada hay que distinguirla de "este símbolo no tiene logo":
+    // lo primero es temporal y hay que reintentarlo, lo segundo es
+    // permanente y el cliente deja de preguntar. Confundirlos dejaría todos
+    // los logos desactivados para siempre al agotarse la cuota un solo día.
+    // Twelve Data lo señala con un HTTP 429, pero también responde 200 con
+    // {status:"error"} en otros casos, así que se miran las dos cosas.
+    if (metaRes.status === 429) {
+      return Response.json({ error: 'quota' }, { status: 429 })
+    }
+    if (!metaRes.ok) return new Response(null, { status: 404 })
+
+    const metaData = await metaRes.json()
     if (metaData.code === 429) {
       return Response.json({ error: 'quota' }, { status: 429 })
     }
