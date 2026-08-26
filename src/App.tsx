@@ -36,12 +36,7 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>Cartera Tracker</h1>
-        <button className="button" onClick={handleRefresh} disabled={refreshing || rows.length === 0}>
-          {refreshing ? 'Actualizando…' : 'Actualizar precios'}
-        </button>
       </header>
-
-      {refreshError && <p className="warning-text">{refreshError}</p>}
 
       <ImportPanel />
 
@@ -59,7 +54,12 @@ function App() {
           <SummaryCards rows={rows} />
           <DayMoversPanel rows={rows} />
           <div className="main-grid">
-            <PositionsTable rows={rows} />
+            <PositionsTable
+              rows={rows}
+              onRefresh={handleRefresh}
+              refreshing={refreshing}
+              refreshError={refreshError}
+            />
             <Suspense fallback={null}>
               <AllocationChart rows={rows} />
             </Suspense>

@@ -23,11 +23,11 @@ export function ImportPanel() {
   }
 
   return (
-    <section className="panel">
-      <div className="panel-header">
-        <h2>Importar extracto de XTB</h2>
+    <section className="import-bar">
+      <div className="import-bar-row">
+        <span className="import-bar-label">Importar extracto de XTB</span>
         <button
-          className="button"
+          className="button button-sm"
           disabled={status === 'loading'}
           onClick={() => inputRef.current?.click()}
         >

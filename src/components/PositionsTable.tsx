@@ -36,7 +36,14 @@ function sortValue(row: PortfolioRow, key: SortKey): number | string {
   }
 }
 
-export function PositionsTable({ rows }: { rows: PortfolioRow[] }) {
+interface PositionsTableProps {
+  rows: PortfolioRow[]
+  onRefresh: () => void
+  refreshing: boolean
+  refreshError: string | null
+}
+
+export function PositionsTable({ rows, onRefresh, refreshing, refreshError }: PositionsTableProps) {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('value')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -71,13 +78,19 @@ export function PositionsTable({ rows }: { rows: PortfolioRow[] }) {
 
   return (
     <div>
-      <input
-        className="table-search"
-        type="search"
-        placeholder="Buscar por símbolo o nombre…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
+      <div className="table-toolbar">
+        <input
+          className="table-search"
+          type="search"
+          placeholder="Buscar por símbolo o nombre…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <button className="button button-sm" onClick={onRefresh} disabled={refreshing}>
+          {refreshing ? 'Actualizando…' : 'Actualizar precios'}
+        </button>
+      </div>
+      {refreshError && <p className="warning-text">{refreshError}</p>}
       <div className="positions-table-wrapper scroll-thin">
         <table className="positions-table">
           <thead>
