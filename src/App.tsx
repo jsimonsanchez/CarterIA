@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from 'react'
 import './App.css'
 import { DayMoversPanel } from './components/DayMoversPanel'
-import { ImportPanel } from './components/ImportPanel'
+import { ImportButton, ImportFeedback, useXtbImport } from './components/ImportPanel'
 import { PositionsTable } from './components/PositionsTable'
 import { RealizedGainsPanel } from './components/RealizedGainsPanel'
 import { ReportsPanel } from './components/ReportsPanel'
@@ -18,6 +18,7 @@ function App() {
   const [refreshing, setRefreshing] = useState(false)
   const [refreshError, setRefreshError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('cartera')
+  const importState = useXtbImport()
 
   async function handleRefresh() {
     setRefreshing(true)
@@ -38,16 +39,19 @@ function App() {
         <h1>Cartera Tracker</h1>
       </header>
 
-      <ImportPanel />
-
       <nav className="tabs">
-        <button className={`tab ${tab === 'cartera' ? 'active' : ''}`} onClick={() => setTab('cartera')}>
-          Cartera
-        </button>
-        <button className={`tab ${tab === 'realizado' ? 'active' : ''}`} onClick={() => setTab('realizado')}>
-          Posiciones cerradas
-        </button>
+        <div className="tabs-left">
+          <button className={`tab ${tab === 'cartera' ? 'active' : ''}`} onClick={() => setTab('cartera')}>
+            Cartera
+          </button>
+          <button className={`tab ${tab === 'realizado' ? 'active' : ''}`} onClick={() => setTab('realizado')}>
+            Posiciones cerradas
+          </button>
+        </div>
+        <ImportButton state={importState} />
       </nav>
+
+      <ImportFeedback state={importState} />
 
       {tab === 'cartera' ? (
         <>

@@ -188,25 +188,20 @@
 }
 
 /* Importar un extracto es algo puntual (una vez cada varias semanas o
-   meses), a diferencia del resto del panel que se consulta a diario — una
-   franja fina en vez de un panel grande le da la prominencia justa que le
-   corresponde. */
-.import-bar-row {
+   meses), a diferencia de las pestañas que se usan a diario — un botón a la
+   derecha de las pestañas le da la prominencia justa que le corresponde,
+   sin reservarle una franja propia. */
+.tabs {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  border-bottom: 1px solid var(--border);
 }
 
-.import-bar-label {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.tabs {
+.tabs-left {
   display: flex;
   gap: 4px;
-  border-bottom: 1px solid var(--border);
 }
 
 .tab {
@@ -249,22 +244,12 @@
   margin-bottom: 4px;
 }
 
-.import-bar {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 10px 16px;
-}
-
-.import-summary {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px dashed var(--border);
+.import-feedback {
   font-size: 14px;
   color: var(--text-muted);
 }
 
-.import-summary details {
+.import-feedback details {
   margin-top: 8px;
 }
 
