@@ -75,8 +75,11 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
           </span>
           {priceHint && <span className="card-hint">{priceHint}</span>}
         </div>
-        <Stat label="Coste de la cartera" value={formatEur(costBasis)} />
-        <Stat label="Posiciones abiertas" value={String(rows.length)} />
+        <Stat
+          label="Coste de la cartera"
+          value={formatEur(costBasis)}
+          sub={`Posiciones abiertas ${rows.length}`}
+        />
         <Stat
           label="Plusvalía no realizada"
           value={formatEur(unrealizedPnl)}
