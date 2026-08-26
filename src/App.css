@@ -18,6 +18,17 @@
   font-variant-numeric: tabular-nums;
 }
 
+@media (max-width: 640px) {
+  /* En estrecho, el título y la cifra compitiendo por la misma fila hacían
+     que "Mayor volatilidad hoy" se partiera en varias líneas — el título va
+     en su propia fila y la variación de la cartera debajo. */
+  .movers-panel .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+
 .movers-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
