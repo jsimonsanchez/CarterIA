@@ -72,4 +72,11 @@ export interface SymbolMapping {
   twelveDataExchange?: string
   yahooSymbol: string
   name?: string
+  /**
+   * URL de la imagen del logo ya resuelta, cacheada para no volver a gastar
+   * crédito de la API en cada visita: los logos no cambian nunca. `null`
+   * significa "ya se preguntó y este símbolo no tiene logo", para no
+   * reintentarlo indefinidamente; `undefined`, que aún no se ha preguntado.
+   */
+  logoUrl?: string | null
 }

@@ -29,7 +29,15 @@ export async function ensureSymbolMappings(xtbSymbols: Iterable<string>): Promis
 
     const resolved = resolveSymbol(xtbSymbol)
     if (resolved) {
-      await db.symbolMappings.put(resolved)
+      // El nombre de la empresa y el logo no salen del extracto: los aporta
+      // el proveedor de precios y cuesta una llamada conseguirlos. Se
+      // conservan al reimportar en vez de volver a pedirlos.
+      const existing = await db.symbolMappings.get(xtbSymbol)
+      await db.symbolMappings.put({
+        ...resolved,
+        name: resolved.name ?? existing?.name,
+        logoUrl: existing?.logoUrl,
+      })
     } else {
       unresolved.push(xtbSymbol)
     }
