@@ -14,10 +14,27 @@ export function DayMoversPanel({ rows }: { rows: PortfolioRow[] }) {
 
   if (movers.length === 0) return null
 
+  // Variación de hoy de toda la cartera (no solo de los valores del ranking
+  // de abajo): suma de las plusvalías del día de las posiciones con dato de
+  // hoy, sobre el valor que tenían ayer (valor actual menos lo ganado/perdido
+  // hoy) — así el % es el peso real de cada posición, no una media simple.
+  const withDayChange = rows.filter((r) => r.dayChangeEur !== undefined && r.marketValueEur !== undefined)
+  const totalDayChangeEur = withDayChange.reduce((acc, r) => acc + r.dayChangeEur!, 0)
+  const totalPreviousValueEur = withDayChange.reduce((acc, r) => acc + (r.marketValueEur! - r.dayChangeEur!), 0)
+  const totalDayChangePct = totalPreviousValueEur > 0 ? (totalDayChangeEur / totalPreviousValueEur) * 100 : undefined
+  const totalUp = totalDayChangePct !== undefined && totalDayChangePct >= 0
+
   return (
     <section className="panel movers-panel">
       <div className="panel-header">
         <h2>Mayor volatilidad hoy</h2>
+        {totalDayChangePct !== undefined && (
+          <span className={`movers-total ${totalUp ? 'positive' : 'negative'}`}>
+            {totalUp ? '📈' : '📉'} {totalUp ? '+' : ''}
+            {totalDayChangePct.toFixed(2)}% ({totalDayChangeEur >= 0 ? '+' : ''}
+            {formatEur(totalDayChangeEur)})
+          </span>
+        )}
       </div>
       <div className="movers-grid">
         {movers.map((row) => {
