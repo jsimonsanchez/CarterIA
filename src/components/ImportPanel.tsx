@@ -1,7 +1,9 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { importXtbFile, type ImportSummary } from '../services/importPortfolio'
 
 type ImportStatus = 'idle' | 'loading' | 'done' | 'error'
+
+const FEEDBACK_TIMEOUT_MS = 60_000
 
 /** Estado + lógica de importación, compartidos entre el botón (junto a las pestañas) y el panel de resultado (debajo). */
 export function useXtbImport() {
@@ -9,6 +11,14 @@ export function useXtbImport() {
   const [status, setStatus] = useState<ImportStatus>('idle')
   const [summary, setSummary] = useState<ImportSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // El resultado de una importación (o su error) es información puntual, no
+  // algo que deba quedarse indefinidamente ocupando espacio en pantalla.
+  useEffect(() => {
+    if (status !== 'done' && status !== 'error') return
+    const timer = setTimeout(() => setStatus('idle'), FEEDBACK_TIMEOUT_MS)
+    return () => clearTimeout(timer)
+  }, [status])
 
   async function handleFile(file: File) {
     setStatus('loading')
