@@ -249,14 +249,55 @@
   font-weight: 400;
 }
 
+.info-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .info-popover-title {
   font-size: 13px;
   font-weight: 650;
   color: var(--text-h);
 }
 
+/* Botón de cierre explícito: en táctil no hay forma de "salirse" de algo
+   como con el ratón, así que conviene que se vea cómo cerrarlo. */
+.info-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: -8px -8px -8px 0;
+  padding: 8px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: color 0.15s ease;
+}
+
+.info-close:hover,
+.info-close:focus-visible {
+  color: var(--text-h);
+}
+
 .info-popover::backdrop {
   background: rgba(4, 8, 18, 0.45);
+}
+
+@media (max-width: 640px) {
+  /* Como panel inferior: centrado tapaba justo las cifras que explica, y
+     junto al borde inferior queda además al alcance del pulgar. */
+  .info-popover {
+    inset: auto 0 0 0;
+    margin: 0;
+    max-width: none;
+    width: 100%;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 18px 20px calc(20px + env(safe-area-inset-bottom));
+  }
 }
 
 /* Contorno en vez de relleno: una acción destructiva y poco frecuente no
