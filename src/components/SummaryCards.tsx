@@ -64,85 +64,79 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
 
   return (
     <section className="summary-cards">
-      <Card
+      <StatTile
+        hero
         label="Valor Total"
         value={formatEur(marketValue + cashBalance)}
-        subLines={[
-          `Coste de la cartera: ${formatEur(costBasis)}`,
-          `Posiciones abiertas: ${rows.length}`,
-          `Posiciones: ${formatEur(marketValue)}`,
-          `Liquidez: ${formatEur(cashBalance)}`,
-        ]}
+        sub={`Posiciones ${formatEur(marketValue)} · Liquidez ${formatEur(cashBalance)}`}
         hint={buildPriceHint(missingPrices, stalePrices)}
       />
-      <div className="card">
-        <PnlLine label="Plusvalía no realizada" value={unrealizedPnl} pct={unrealizedPct} />
-        <PnlLine label="Plusvalías realizadas" value={realizedPnl} pct={realizedPct} />
-        <PnlLine label="Total (+ dividendos e intereses)" value={total} pct={totalPct} emphasized />
-        {xirrPct !== undefined && (
-          <div
-            className="pnl-line xirr-line"
-            title={
-              usedFallback
-                ? 'Rentabilidad anualizada ponderada por dinero (aproximación, método Dietz modificado — el cálculo exacto XIRR no convergió con estos flujos).'
-                : 'Rentabilidad anualizada ponderada por dinero (XIRR): tiene en cuenta cuándo entró cada ingreso, no solo cuánto.'
-            }
-          >
-            <span className="card-label">Rentabilidad anualizada {usedFallback ? '(aprox.)' : '(XIRR)'}</span>
-            <span className={`card-value ${xirrPct >= 0 ? 'positive' : 'negative'}`}>{formatPct(xirrPct)}</span>
-          </div>
-        )}
-      </div>
+      <StatTile label="Coste de la cartera" value={formatEur(costBasis)} />
+      <StatTile label="Posiciones abiertas" value={String(rows.length)} />
+      <StatTile
+        label="Plusvalía no realizada"
+        value={formatEur(unrealizedPnl)}
+        sub={unrealizedPct !== undefined ? formatPct(unrealizedPct) : undefined}
+        tone={unrealizedPnl >= 0 ? 'positive' : 'negative'}
+      />
+      <StatTile
+        label="Plusvalías realizadas"
+        value={formatEur(realizedPnl)}
+        sub={realizedPct !== undefined ? formatPct(realizedPct) : undefined}
+        tone={realizedPnl >= 0 ? 'positive' : 'negative'}
+      />
+      <StatTile
+        emphasized
+        label="Total (+ dividendos e intereses)"
+        value={formatEur(total)}
+        sub={totalPct !== undefined ? formatPct(totalPct) : undefined}
+        tone={total >= 0 ? 'positive' : 'negative'}
+      />
+      {xirrPct !== undefined && (
+        <StatTile
+          emphasized
+          label={`Rentabilidad anualizada ${usedFallback ? '(aprox.)' : '(XIRR)'}`}
+          value={formatPct(xirrPct)}
+          tone={xirrPct >= 0 ? 'positive' : 'negative'}
+          title={
+            usedFallback
+              ? 'Rentabilidad anualizada ponderada por dinero (aproximación, método Dietz modificado — el cálculo exacto XIRR no convergió con estos flujos).'
+              : 'Rentabilidad anualizada ponderada por dinero (XIRR): tiene en cuenta cuándo entró cada ingreso, no solo cuánto.'
+          }
+        />
+      )}
     </section>
   )
 }
 
-function PnlLine({
-  label,
-  value,
-  pct,
-  emphasized,
-}: {
-  label: string
-  value: number
-  pct?: number
-  emphasized?: boolean
-}) {
-  const tone = value >= 0 ? 'positive' : 'negative'
-  return (
-    <div className={`pnl-line ${emphasized ? 'pnl-line-total' : ''}`}>
-      <span className="card-label">{label}</span>
-      <span className={`card-value ${tone}`}>{formatEur(value)}</span>
-      {pct !== undefined && <span className={`card-sub ${tone}`}>{formatPct(pct)}</span>}
-    </div>
-  )
-}
-
-function Card({
+function StatTile({
   label,
   value,
   sub,
-  subLines,
   hint,
   tone,
+  emphasized,
+  hero,
+  title,
 }: {
   label: string
   value: string
   sub?: string
-  subLines?: string[]
   hint?: string
   tone?: 'positive' | 'negative'
+  emphasized?: boolean
+  hero?: boolean
+  title?: string
 }) {
+  const classes = ['stat-tile']
+  if (hero) classes.push('stat-tile-hero')
+  if (emphasized) classes.push('stat-tile-emphasized')
+
   return (
-    <div className="card">
+    <div className={classes.join(' ')} title={title}>
       <span className="card-label">{label}</span>
       <span className={`card-value ${tone ?? ''}`}>{value}</span>
       {sub && <span className={`card-sub ${tone ?? ''}`}>{sub}</span>}
-      {subLines?.map((line) => (
-        <span key={line} className={`card-sub ${tone ?? ''}`}>
-          {line}
-        </span>
-      ))}
       {hint && <span className="card-hint">{hint}</span>}
     </div>
   )

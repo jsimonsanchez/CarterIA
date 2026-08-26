@@ -260,27 +260,53 @@
 
 .summary-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
 }
 
-.card {
+.stat-tile {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 18px 20px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  justify-content: center;
+  gap: 3px;
   box-shadow: var(--shadow-sm);
   transition:
     border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 
-.card:hover {
+.stat-tile:hover {
   border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
   box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* La tarjeta con el importe total lleva más información (posiciones,
+   liquidez) y es la cifra que más importa de un vistazo — ocupa dos
+   columnas y un ligero tinte de acento para destacar sobre el resto. */
+.stat-tile-hero {
+  grid-column: span 2;
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 6%, var(--surface)), var(--surface));
+}
+
+.stat-tile-hero .card-value {
+  font-size: 26px;
+}
+
+.stat-tile-emphasized {
+  background: color-mix(in srgb, var(--positive) 4%, var(--surface));
+}
+
+@media (max-width: 640px) {
+  .stat-tile-hero {
+    grid-column: 1 / -1;
+  }
 }
 
 .card-label {
@@ -299,6 +325,10 @@
   font-variant-numeric: tabular-nums;
 }
 
+.stat-tile .card-value {
+  font-size: 20px;
+}
+
 .card-sub {
   font-size: 13px;
   font-variant-numeric: tabular-nums;
@@ -308,30 +338,6 @@
 .card-hint {
   font-size: 12px;
   color: var(--text-muted);
-}
-
-.pnl-line {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.pnl-line + .pnl-line {
-  margin-top: 10px;
-}
-
-.pnl-line .card-value {
-  font-size: 18px;
-}
-
-.pnl-line-total {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-}
-
-.pnl-line-total .card-value {
-  font-size: 23px;
 }
 
 .main-grid {
