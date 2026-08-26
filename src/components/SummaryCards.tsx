@@ -66,15 +66,15 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
 
   return (
     <section className="panel summary-panel">
-      <div className="summary-hero">
-        <span className="card-label">Valor Total</span>
-        <span className="card-value">{formatEur(marketValue + cashBalance)}</span>
-        <span className="card-sub">
-          Posiciones {formatEur(marketValue)} · Liquidez {formatEur(cashBalance)}
-        </span>
-        {priceHint && <span className="card-hint">{priceHint}</span>}
-      </div>
       <div className="summary-grid">
+        <div className="summary-stat summary-stat-hero">
+          <span className="card-label">Valor Total</span>
+          <span className="card-value">{formatEur(marketValue + cashBalance)}</span>
+          <span className="card-sub">
+            Posiciones {formatEur(marketValue)} · Liquidez {formatEur(cashBalance)}
+          </span>
+          {priceHint && <span className="card-hint">{priceHint}</span>}
+        </div>
         <Stat label="Coste de la cartera" value={formatEur(costBasis)} />
         <Stat label="Posiciones abiertas" value={String(rows.length)} />
         <Stat
