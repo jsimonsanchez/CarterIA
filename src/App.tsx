@@ -36,7 +36,20 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Cartera Tracker</h1>
+        <h1>
+          <svg className="app-logo" width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="app-logo-gradient" x1="2" y1="24" x2="28" y2="6" gradientUnits="userSpaceOnUse">
+                <stop stopColor="var(--accent)" />
+                <stop offset="1" stopColor="var(--positive)" />
+              </linearGradient>
+            </defs>
+            <rect x="3" y="16" width="6" height="11" rx="2" fill="url(#app-logo-gradient)" />
+            <rect x="12" y="9" width="6" height="18" rx="2" fill="url(#app-logo-gradient)" />
+            <rect x="21" y="2" width="6" height="25" rx="2" fill="url(#app-logo-gradient)" />
+          </svg>
+          Cartera Tracker
+        </h1>
       </header>
 
       <nav className="tabs">

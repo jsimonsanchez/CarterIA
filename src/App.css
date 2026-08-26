@@ -130,18 +130,15 @@
 }
 
 .app-header h1 {
-  font-size: 24px;
+  font-family: 'Dancing Script', cursive;
+  font-weight: 700;
+  font-size: 32px;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.app-header h1::before {
-  content: '';
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  background: linear-gradient(135deg, var(--accent), var(--positive));
+.app-logo {
   flex-shrink: 0;
 }
 
