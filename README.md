@@ -17,9 +17,15 @@ al día, plusvalías y rentabilidad anualizada. Todo se queda en tu dispositivo.
 
 ## Qué hace
 
-Un extracto de XTB es una hoja de cálculo con cientos de apuntes de caja: compras,
-ventas, dividendos, retenciones, comisiones e ingresos. Útil para Hacienda,
-inservible para responder «¿cómo va mi cartera?». Esto lo convierte en eso otro.
+**Ver la situación completa de tu cartera de un vistazo.**
+
+El extracto que exporta XTB es un libro de caja: cientos de apuntes sueltos
+ordenados por fecha —compras, ventas, dividendos, retenciones, comisiones e
+ingresos—. Sirve para justificar cada movimiento ante Hacienda, pero de ahí no
+se lee cuánto vale hoy tu cartera ni cuánto llevas ganado.
+
+Cartera Tracker lee ese mismo archivo y lo presenta como lo que te interesa
+saber: qué tienes, cuánto vale ahora y cómo ha ido.
 
 | | |
 |---|---|
