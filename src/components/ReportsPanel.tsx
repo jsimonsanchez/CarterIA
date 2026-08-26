@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
+import { isTaxFee } from '../domain/fees'
 import { formatEur } from '../utils/format'
 
 export function ReportsPanel() {
@@ -8,9 +9,12 @@ export function ReportsPanel() {
   if (!transactions) return null
 
   const dividends = sumByType(transactions, 'dividend')
-  const fees = sumByType(transactions, 'fee')
   const interest = sumByType(transactions, 'interest')
   const deposits = sumByType(transactions, 'deposit')
+
+  const feeTransactions = transactions.filter((t) => t.type === 'fee')
+  const taxes = sumAmount(feeTransactions.filter((t) => isTaxFee(t.rawDescription)))
+  const commissions = sumAmount(feeTransactions.filter((t) => !isTaxFee(t.rawDescription)))
 
   return (
     <section className="panel">
@@ -21,8 +25,12 @@ export function ReportsPanel() {
           <dd className="positive">{formatEur(dividends)}</dd>
         </div>
         <div>
-          <dt>Comisiones e impuestos</dt>
-          <dd className="negative">{formatEur(fees)}</dd>
+          <dt>Comisiones</dt>
+          <dd className="negative">{formatEur(commissions)}</dd>
+        </div>
+        <div>
+          <dt>Impuestos</dt>
+          <dd className="negative">{formatEur(taxes)}</dd>
         </div>
         <div>
           <dt>Intereses de efectivo</dt>
@@ -38,5 +46,9 @@ export function ReportsPanel() {
 }
 
 function sumByType(transactions: { type: string; total: number }[], type: string): number {
-  return transactions.filter((t) => t.type === type).reduce((acc, t) => acc + t.total, 0)
+  return sumAmount(transactions.filter((t) => t.type === type))
+}
+
+function sumAmount(transactions: { total: number }[]): number {
+  return transactions.reduce((acc, t) => acc + t.total, 0)
 }
