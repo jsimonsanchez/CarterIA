@@ -110,10 +110,10 @@ async function fetchYahoo(symbol: string): Promise<PriceResult | null> {
  * Yahoo va primero y Twelve Data queda como respaldo. El orden era el
  * inverso, pero el plan gratuito de Twelve Data ya rechazaba la mayoría de
  * plazas europeas —así que se acababa consultando a Yahoo igualmente, tras
- * gastar un crédito— y su límite diario (800) se agota con ~29 pulsaciones
- * de "Actualizar precios" en una cartera de 27 posiciones. Al agotarse
- * dejaban de funcionar también los logos, que dependen del mismo crédito y
- * no tienen alternativa en Yahoo. Yahoo no pide clave ni tiene cuota.
+ * gastar un crédito— y su límite diario (800) se agota rápido, porque cada
+ * actualización consume uno por posición. Al agotarse dejaban de funcionar
+ * también los logos, que dependen del mismo crédito y no tienen alternativa
+ * en Yahoo. Yahoo no pide clave ni tiene cuota.
  */
 export default async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url)
