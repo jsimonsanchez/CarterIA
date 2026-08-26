@@ -184,6 +184,12 @@
   white-space: nowrap;
 }
 
+@media (max-width: 640px) {
+  .import-btn-suffix {
+    display: none;
+  }
+}
+
 /* Importar un extracto es algo puntual (una vez cada varias semanas o
    meses), a diferencia de las pestañas que se usan a diario — un botón a la
    derecha de las pestañas le da la prominencia justa que le corresponde,

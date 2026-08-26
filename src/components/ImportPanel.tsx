@@ -36,7 +36,13 @@ export function ImportButton({ state }: { state: XtbImportState }) {
   return (
     <>
       <button className="button button-sm" disabled={status === 'loading'} onClick={() => inputRef.current?.click()}>
-        {status === 'loading' ? 'Importando…' : 'Importar extracto de XTB'}
+        {status === 'loading' ? (
+          'Importando…'
+        ) : (
+          <>
+            Importar extracto<span className="import-btn-suffix"> de XTB</span>
+          </>
+        )}
       </button>
       <input
         ref={inputRef}
