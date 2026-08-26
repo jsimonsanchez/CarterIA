@@ -41,7 +41,7 @@ export function DayMoversPanel({ rows }: { rows: PortfolioRow[] }) {
           const up = (row.dayChangePct ?? 0) >= 0
           const logo = logos[row.symbol]
           return (
-            <div key={row.symbol} className={`mover-card ${up ? 'mover-up' : 'mover-down'}`}>
+            <div key={row.symbol} className={`mover-card ${up ? 'mover-up' : 'mover-down'}`} title={row.name}>
               <div className="mover-top">
                 <span className="mover-symbol-group">
                   {logo && (

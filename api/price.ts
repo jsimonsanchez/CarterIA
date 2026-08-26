@@ -16,6 +16,8 @@ interface PriceResult {
    * suficientes para saberlo (se trata como fresco, para no ocultar de más).
    */
   isTodaySession?: boolean
+  /** Nombre completo del instrumento (p.ej. "Apple Inc."), cuando el proveedor lo da. */
+  name?: string
 }
 
 // Yahoo devuelve 403/429 sin una cabecera User-Agent de navegador real.
@@ -46,6 +48,7 @@ async function fetchTwelveData(symbol: string, exchange: string | null): Promise
       source: 'twelvedata',
       previousClose: Number.isFinite(previousClose) ? previousClose : undefined,
       isTodaySession: data.is_market_open === true || data.datetime === today,
+      name: typeof data.name === 'string' ? data.name : undefined,
     }
   } catch {
     return null
@@ -75,12 +78,15 @@ async function fetchYahooFromHost(host: string, symbol: string): Promise<PriceRe
         ? regularMarketTime >= regularSessionStart
         : undefined
 
+    const name = result?.meta?.longName ?? result?.meta?.shortName
+
     return {
       price,
       currency,
       source: 'yahoo',
       previousClose: typeof previousClose === 'number' ? previousClose : undefined,
       isTodaySession,
+      name: typeof name === 'string' ? name : undefined,
     }
   } catch {
     return null

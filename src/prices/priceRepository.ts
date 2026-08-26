@@ -7,6 +7,7 @@ interface ProxyPriceResponse {
   source: 'twelvedata' | 'yahoo'
   previousClose?: number
   isTodaySession?: boolean
+  name?: string
 }
 
 /**
@@ -42,6 +43,14 @@ export async function getPrice(mapping: SymbolMapping): Promise<PriceCacheEntry>
       isTodaySession: data.isTodaySession,
     }
     await db.priceCache.put(entry)
+
+    // El nombre completo del instrumento no viene en el extracto de XTB —
+    // se rellena a partir de lo que devuelva el proveedor de precios, la
+    // primera vez que se consigue.
+    if (data.name && data.name !== mapping.name) {
+      await db.symbolMappings.put({ ...mapping, name: data.name })
+    }
+
     return entry
   } catch (err) {
     const cached = await db.priceCache.get(mapping.xtbSymbol)
