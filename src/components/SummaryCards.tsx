@@ -1,4 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useMemo } from 'react'
 import { db } from '../db/db'
 import { isPriceStale } from '../domain/priceFreshness'
 import { modifiedDietzAnnualized, xirr } from '../domain/xirr'
@@ -22,8 +23,15 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
   const missingPrices = rows.length - withPrice.length
   const stalePrices = withPrice.filter((r) => isPriceStale(r.priceFetchedAt)).length
 
+  // Cada % se calcula sobre SU propia base de coste, no sobre una común: la
+  // plusvalía realizada procede de operaciones ya cerradas, cuyo coste
+  // (purchaseValueEur) no tiene relación con lo que hay invertido hoy.
+  // Dividirla entre el coste de las posiciones abiertas daba un porcentaje
+  // arbitrario — cuantas menos posiciones abiertas, más inflado — y además
+  // no coincidía con el que muestra la pestaña "Posiciones cerradas".
   const realizedPnl = sum(closedTrades, (t) => t.realizedPnlEur)
-  const realizedPct = costBasis > 0 ? (realizedPnl / costBasis) * 100 : undefined
+  const realizedCostBasis = sum(closedTrades, (t) => t.purchaseValueEur)
+  const realizedPct = realizedCostBasis > 0 ? (realizedPnl / realizedCostBasis) * 100 : undefined
 
   const dividends = sum(
     transactions.filter((t) => t.type === 'dividend'),
@@ -34,11 +42,12 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
     (t) => t.total,
   )
 
-  // Los tres % se calculan sobre el mismo "coste de la cartera" (posiciones
-  // abiertas) para que sean directamente comparables entre sí, en vez de
-  // cada uno respecto a una base distinta.
+  // El total abarca posiciones abiertas y cerradas, así que su base es todo
+  // el capital que ha llegado a estar invertido: lo que hay puesto hoy más
+  // lo que costaron en su día las operaciones ya cerradas.
   const total = unrealizedPnl + realizedPnl + dividends + interest
-  const totalPct = costBasis > 0 ? (total / costBasis) * 100 : undefined
+  const totalInvestedBasis = costBasis + realizedCostBasis
+  const totalPct = totalInvestedBasis > 0 ? (total / totalInvestedBasis) * 100 : undefined
 
   // XIRR: rentabilidad anualizada ponderada por dinero. Flujos = cada
   // ingreso (negativo, sale del bolsillo del inversor) + el valor actual de
@@ -46,21 +55,30 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
   // dividendos e intereses no son flujos aparte — ya están recogidos en el
   // valor final. No es TWR (necesitaría un histórico diario de valoración
   // que todavía no se guarda).
-  const depositFlows = transactions
-    .filter((t) => t.type === 'deposit')
-    .map((t) => ({ date: new Date(t.date), amount: -t.total }))
-  const allFlows = depositFlows.length > 0 ? [...depositFlows, { date: new Date(), amount: marketValue + cashBalance }] : []
-  // xirr() puede no converger con ciertos conjuntos de flujos (aportaciones
-  // muy concentradas, correcciones con importe negativo, etc.) — si falla,
-  // el método Dietz modificado (fórmula cerrada, no puede fallar por no
-  // converger) sirve de respaldo para que la cifra no desaparezca sin más.
-  const xirrRate = allFlows.length > 0 ? xirr(allFlows) : undefined
-  const usedFallback = xirrRate === undefined && allFlows.length > 0
-  if (usedFallback) {
-    console.warn('XIRR no convergió, usando Dietz modificado como respaldo. Flujos:', allFlows)
-  }
-  const annualizedRate = xirrRate ?? (usedFallback ? modifiedDietzAnnualized(allFlows) : undefined)
-  const xirrPct = annualizedRate !== undefined ? annualizedRate * 100 : undefined
+  //
+  // Va en useMemo porque es iterativo (Newton-Raphson, con bisección de
+  // respaldo) y este componente se re-renderiza con cada cambio en Dexie:
+  // sin memoizar se recalculaba entero en cada render, y el console.warn del
+  // respaldo se repetía indefinidamente en consola.
+  const { xirrPct, usedFallback } = useMemo(() => {
+    const depositFlows = transactions
+      .filter((t) => t.type === 'deposit')
+      .map((t) => ({ date: new Date(t.date), amount: -t.total }))
+    if (depositFlows.length === 0) return { xirrPct: undefined, usedFallback: false }
+
+    const allFlows = [...depositFlows, { date: new Date(), amount: marketValue + cashBalance }]
+    // xirr() puede no converger con ciertos conjuntos de flujos (aportaciones
+    // muy concentradas, correcciones con importe negativo, etc.) — si falla,
+    // el método Dietz modificado (fórmula cerrada, no puede fallar por no
+    // converger) sirve de respaldo para que la cifra no desaparezca sin más.
+    const xirrRate = xirr(allFlows)
+    const fallback = xirrRate === undefined
+    if (fallback) {
+      console.warn('XIRR no convergió, usando Dietz modificado como respaldo. Flujos:', allFlows)
+    }
+    const rate = xirrRate ?? modifiedDietzAnnualized(allFlows)
+    return { xirrPct: rate !== undefined ? rate * 100 : undefined, usedFallback: fallback }
+  }, [transactions, marketValue, cashBalance])
 
   const priceHint = buildPriceHint(missingPrices, stalePrices)
 

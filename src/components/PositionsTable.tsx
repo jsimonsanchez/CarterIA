@@ -157,7 +157,7 @@ function PositionRow({ row, expanded, onToggle }: { row: PortfolioRow; expanded:
             </span>
           ) : row.currentPriceNative !== undefined ? (
             <>
-              {formatNativePrice(row.currentPriceNative, row.currentCurrency!)}
+              {formatNativePrice(row.currentPriceNative, row.currentCurrency!, 4)}
               {isStale && (
                 <span className="stale-badge" title={`Precio de ${new Date(row.priceFetchedAt!).toLocaleString('es-ES')} — desactualizado`}>
                   ⏱
