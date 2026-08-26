@@ -263,7 +263,7 @@
    como el hueco en blanco que deja una celda más corta que su vecina.
    "Valor Total" es una celda más de la misma rejilla (no una franja aparte
    a ancho completo: en pantallas anchas dejaba muchísimo hueco vacío a su
-   derecha) — solo se distingue por un tamaño de letra mayor. align-items:
+   derecha), con la misma tipografía que el resto de cifras. align-items:
    start evita que CSS grid fuerce a todas las celdas de la fila a igualar
    la altura de la más alta (esa era la causa del hueco en blanco original).
 */
@@ -279,10 +279,6 @@
   flex-direction: column;
   gap: 3px;
   min-width: 0;
-}
-
-.summary-stat-hero .card-value {
-  font-size: 28px;
 }
 
 .card-label {

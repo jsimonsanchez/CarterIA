@@ -67,7 +67,7 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
   return (
     <section className="panel summary-panel">
       <div className="summary-grid">
-        <div className="summary-stat summary-stat-hero">
+        <div className="summary-stat">
           <span className="card-label">Valor Total</span>
           <span className="card-value">{formatEur(marketValue + cashBalance)}</span>
           <span className="card-sub">
