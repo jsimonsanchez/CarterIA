@@ -23,14 +23,14 @@ export function AllocationChart({ rows }: { rows: PortfolioRow[] }) {
 
   return (
     <div className="chart-container">
-      <ResponsiveContainer width="100%" height={180}>
+      <ResponsiveContainer width="100%" height={95}>
         <PieChart>
           <Pie
             data={data}
             dataKey="value"
             nameKey="name"
-            innerRadius={42}
-            outerRadius={72}
+            innerRadius={20}
+            outerRadius={38}
             paddingAngle={1}
             isAnimationActive={false}
           >
