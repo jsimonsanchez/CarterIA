@@ -28,8 +28,14 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
   const withPrice = rows.filter((r) => r.marketValueEur !== undefined)
   const marketValue = sum(withPrice, (r) => r.marketValueEur ?? 0)
   const unrealizedPnl = sum(withPrice, (r) => r.unrealizedPnlEur ?? 0)
-  const unrealizedPct = costBasis > 0 ? (unrealizedPnl / costBasis) * 100 : undefined
   const missingPrices = rows.length - withPrice.length
+
+  // El % se calcula solo sobre el coste de las posiciones QUE TIENEN precio,
+  // no sobre el de todas: la ganancia del numerador tampoco incluye a las
+  // que no lo tienen, así que mezclarlas metía su coste en el divisor sin su
+  // ganancia en el dividendo y el porcentaje salía más bajo de lo real.
+  const pricedCostBasis = sum(withPrice, (r) => r.costBasis)
+  const unrealizedPct = pricedCostBasis > 0 ? (unrealizedPnl / pricedCostBasis) * 100 : undefined
   const stalePrices = withPrice.filter((r) => isPriceStale(r.priceFetchedAt)).length
 
   // Cada % se calcula sobre SU propia base de coste, no sobre una común: la
@@ -108,12 +114,24 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
           value={formatEur(unrealizedPnl)}
           sub={unrealizedPct !== undefined ? formatPct(unrealizedPct) : undefined}
           tone={unrealizedPnl >= 0 ? 'positive' : 'negative'}
+          title={
+            `Lo que aún no has vendido: ${plural(withPrice.length, 'posición', 'posiciones')}, ` +
+            `de ${formatEur(pricedCostBasis)} de coste a ${formatEur(marketValue)} de valor actual.` +
+            (missingPrices > 0
+              ? ` Queda fuera ${plural(missingPrices, 'posición', 'posiciones')} sin precio` +
+                ` (${formatEur(costBasis - pricedCostBasis)} de coste).`
+              : '')
+          }
         />
         <Stat
           label="Plusvalía"
           value={formatEur(realizedPnl)}
           sub={realizedPct !== undefined ? formatPct(realizedPct) : undefined}
           tone={realizedPnl >= 0 ? 'positive' : 'negative'}
+          title={
+            `Lo que ya has vendido: ${plural(closedTrades.length, 'operación cerrada', 'operaciones cerradas')}, ` +
+            `de ${formatEur(realizedCostBasis)} de coste a ${formatEur(realizedCostBasis + realizedPnl)} de venta.`
+          }
         />
         <Stat
           label="Total (+ dividendos e intereses)"
@@ -159,6 +177,10 @@ function Stat({
       {sub && <span className={`card-sub ${tone ?? ''}`}>{sub}</span>}
     </div>
   )
+}
+
+function plural(count: number, singular: string, plural: string): string {
+  return `${count} ${count === 1 ? singular : plural}`
 }
 
 function sum<T>(items: T[], pick: (item: T) => number): number {
