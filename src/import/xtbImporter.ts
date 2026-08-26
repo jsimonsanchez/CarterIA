@@ -81,55 +81,67 @@ export async function parseXtbWorkbook(buffer: ArrayBuffer): Promise<XtbImportRe
   sheet.eachRow((row, rowNumber) => {
     if (rowNumber <= 5) return // metadatos + cabecera
 
-    const rawType = row.getCell(idxType).text?.trim()
-    if (!rawType || rawType === 'Total') {
+    try {
+      const rawType = row.getCell(idxType).text?.trim()
+      // Comparación insensible a mayúsculas: se ha visto la fila de totales
+      // como "Total" y como "TOTAL" según la exportación.
+      if (!rawType || rawType.toLowerCase() === 'total') {
+        skippedRows.push({
+          row: rowNumber,
+          reason: rawType ? 'Fila de totales' : 'Fila sin tipo de operación (vacía)',
+        })
+        return
+      }
+
+      const rawId = row.getCell(idxId).value
+      const id = `xtb-${String(rawId)}`
+      const dateValue = row.getCell(idxTime).value
+      const date = dateValue instanceof Date ? dateValue.toISOString() : String(dateValue ?? '')
+      const amount = Number(row.getCell(idxAmount).value ?? 0)
+      const ticker = idxTicker > 0 ? String(row.getCell(idxTicker).value ?? '').trim() : ''
+      const instrument = idxInstrument > 0 ? String(row.getCell(idxInstrument).value ?? '').trim() : ''
+      const comment = idxComment > 0 ? String(row.getCell(idxComment).value ?? '').trim() : ''
+
+      const type = TYPE_MAP[rawType] ?? 'other'
+      if (type === 'other') {
+        warnings.push({ rowId: id, message: `Tipo de operación no reconocido: "${rawType}"` })
+      }
+
+      let quantity = 0
+      let price = 0
+
+      if (type === 'buy' || type === 'sell') {
+        const match = comment.match(TRADE_COMMENT_RE)
+        if (match) {
+          quantity = Number(match[1])
+          price = quantity > 0 ? Math.abs(amount) / quantity : 0
+        } else {
+          warnings.push({ rowId: id, message: `No se pudo extraer cantidad/precio del comentario: "${comment}"` })
+        }
+      }
+
+      transactions.push({
+        id,
+        date,
+        type,
+        symbol: ticker || instrument,
+        quantity,
+        price,
+        currency: 'EUR',
+        commission: 0,
+        total: amount,
+        rawSymbol: ticker,
+        rawDescription: `${rawType}${instrument ? ' — ' + instrument : ''}${comment ? ' — ' + comment : ''}`,
+      })
+    } catch (err) {
+      // Una fila con un formato inesperado (p.ej. otra variante de fila de
+      // resumen) no debe tirar abajo la importación entera: se omite esa
+      // fila concreta y el resto del extracto se procesa igual.
       skippedRows.push({
         row: rowNumber,
-        reason: rawType === 'Total' ? 'Fila de totales' : 'Fila sin tipo de operación (vacía)',
+        reason: `No se pudo procesar la fila: ${err instanceof Error ? err.message : String(err)}`,
       })
-      return
     }
-
-    const rawId = row.getCell(idxId).value
-    const id = `xtb-${String(rawId)}`
-    const dateValue = row.getCell(idxTime).value
-    const date = dateValue instanceof Date ? dateValue.toISOString() : String(dateValue ?? '')
-    const amount = Number(row.getCell(idxAmount).value ?? 0)
-    const ticker = idxTicker > 0 ? String(row.getCell(idxTicker).value ?? '').trim() : ''
-    const instrument = idxInstrument > 0 ? String(row.getCell(idxInstrument).value ?? '').trim() : ''
-    const comment = idxComment > 0 ? String(row.getCell(idxComment).value ?? '').trim() : ''
-
-    const type = TYPE_MAP[rawType] ?? 'other'
-    if (type === 'other') {
-      warnings.push({ rowId: id, message: `Tipo de operación no reconocido: "${rawType}"` })
-    }
-
-    let quantity = 0
-    let price = 0
-
-    if (type === 'buy' || type === 'sell') {
-      const match = comment.match(TRADE_COMMENT_RE)
-      if (match) {
-        quantity = Number(match[1])
-        price = quantity > 0 ? Math.abs(amount) / quantity : 0
-      } else {
-        warnings.push({ rowId: id, message: `No se pudo extraer cantidad/precio del comentario: "${comment}"` })
-      }
-    }
-
-    transactions.push({
-      id,
-      date,
-      type,
-      symbol: ticker || instrument,
-      quantity,
-      price,
-      currency: 'EUR',
-      commission: 0,
-      total: amount,
-      rawSymbol: ticker,
-      rawDescription: `${rawType}${instrument ? ' — ' + instrument : ''}${comment ? ' — ' + comment : ''}`,
-    })
   })
 
   return { transactions, warnings, skippedRows }
