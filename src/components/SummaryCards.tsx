@@ -22,11 +22,6 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
   const missingPrices = rows.length - withPrice.length
   const stalePrices = withPrice.filter((r) => isPriceStale(r.priceFetchedAt)).length
 
-  const totalDeposits = sum(
-    transactions.filter((t) => t.type === 'deposit'),
-    (t) => t.total,
-  )
-
   const realizedPnl = sum(closedTrades, (t) => t.realizedPnlEur)
   const realizedPct = costBasis > 0 ? (realizedPnl / costBasis) * 100 : undefined
 
@@ -72,13 +67,12 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
       <Card
         label="Valor Total"
         value={formatEur(marketValue + cashBalance)}
-        subLines={[`Posiciones: ${formatEur(marketValue)}`, `Liquidez: ${formatEur(cashBalance)}`]}
+        subLines={[
+          `Coste de la cartera: ${formatEur(costBasis)}`,
+          `Posiciones: ${formatEur(marketValue)}`,
+          `Liquidez: ${formatEur(cashBalance)}`,
+        ]}
         hint={buildPriceHint(missingPrices, stalePrices)}
-      />
-      <Card
-        label="Coste de la cartera"
-        value={formatEur(costBasis)}
-        subLines={[`Cantidad ingresada al broker: ${formatEur(totalDeposits)}`]}
       />
       <div className="card">
         <PnlLine label="Plusvalía no realizada" value={unrealizedPnl} pct={unrealizedPct} />
@@ -98,7 +92,6 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
           </div>
         )}
       </div>
-      <Card label="Posiciones abiertas" value={String(rows.length)} />
     </section>
   )
 }

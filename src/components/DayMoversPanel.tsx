@@ -18,7 +18,6 @@ export function DayMoversPanel({ rows }: { rows: PortfolioRow[] }) {
     <section className="panel movers-panel">
       <div className="panel-header">
         <h2>Mayor volatilidad hoy</h2>
-        <span className="card-hint">vs. cierre de ayer</span>
       </div>
       <div className="movers-grid">
         {movers.map((row) => {
