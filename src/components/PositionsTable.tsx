@@ -3,6 +3,7 @@ import { isPriceStale } from '../domain/priceFreshness'
 import { useLogos } from '../hooks/useLogos'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { formatEur, formatNativePrice, formatPct } from '../utils/format'
+import { InfoPopover } from './InfoPopover'
 import { PositionDetail } from './PositionDetail'
 import { SymbolLogo } from './SymbolLogo'
 
@@ -177,8 +178,15 @@ function PositionRow({
             <>
               {formatNativePrice(row.currentPriceNative, row.currentCurrency!, 4)}
               {isStale && (
-                <span className="stale-badge" title={`Precio de ${new Date(row.priceFetchedAt!).toLocaleString('es-ES')} — desactualizado`}>
+                <span
+                  className="stale-badge"
+                  title={`Precio de ${new Date(row.priceFetchedAt!).toLocaleString('es-ES')} — desactualizado`}
+                >
                   ⏱
+                  <InfoPopover
+                    label="Precio desactualizado"
+                    text={`La última cotización recibida es del ${new Date(row.priceFetchedAt!).toLocaleString('es-ES')}. Pulsa "Actualizar precios" para volver a consultarla.`}
+                  />
                 </span>
               )}
             </>

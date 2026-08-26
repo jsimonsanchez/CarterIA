@@ -202,6 +202,63 @@
   white-space: nowrap;
 }
 
+/* El icono se ve pequeño, pero el padding le da un área de pulsación
+   holgada para el dedo sin ocupar más sitio en pantalla. */
+.info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: -8px 0 -8px 3px;
+  padding: 8px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  vertical-align: middle;
+  transition: color 0.15s ease;
+}
+
+.info-btn:hover,
+.info-btn:focus-visible {
+  color: var(--accent);
+}
+
+.info-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+  border-radius: var(--radius-md);
+}
+
+/* El popover nativo se dibuja centrado en la ventana y en la capa superior:
+   no lo recorta ningún contenedor con scroll ni hace falta z-index. */
+.info-popover {
+  max-width: min(340px, calc(100vw - 32px));
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  font-size: 13px;
+  line-height: 1.5;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 400;
+}
+
+.info-popover-title {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text-h);
+}
+
+.info-popover::backdrop {
+  background: rgba(4, 8, 18, 0.45);
+}
+
 /* Contorno en vez de relleno: una acción destructiva y poco frecuente no
    debe competir visualmente con el resto de botones de la cabecera. */
 .button-danger {

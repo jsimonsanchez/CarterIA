@@ -7,6 +7,7 @@ import { modifiedDietzAnnualized, xirr } from '../domain/xirr'
 import type { ClosedTrade, Transaction } from '../domain/types'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { formatEur, formatPct } from '../utils/format'
+import { InfoPopover } from './InfoPopover'
 
 // Constantes a nivel de módulo, no literales `[]` en el cuerpo del
 // componente: un literal crea un array nuevo en cada render mientras la
@@ -171,7 +172,10 @@ function Stat({
 }) {
   return (
     <div className="summary-stat" title={title}>
-      <span className="card-label">{label}</span>
+      <span className="card-label">
+        {label}
+        {title && <InfoPopover label={label} text={title} />}
+      </span>
       <span className={`card-value ${tone ?? ''}`}>{value}</span>
       {sub && <span className={`card-sub ${tone ?? ''}`}>{sub}</span>}
     </div>

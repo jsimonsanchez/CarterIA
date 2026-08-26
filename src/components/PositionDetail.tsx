@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
 import { annualizedReturn } from '../domain/xirr'
 import { formatDate, formatEur, formatPct } from '../utils/format'
+import { InfoPopover } from './InfoPopover'
 
 const TYPE_LABELS: Record<string, string> = {
   buy: 'Compra',
@@ -41,6 +42,10 @@ export function PositionDetail({ symbol, marketValueEur }: { symbol: string; mar
             title="Rentabilidad anualizada de esta posición (tiene en cuenta cuándo se compró cada lote, dividendos incluidos)."
           >
             {formatPct(annualizedPct)} anualizado
+            <InfoPopover
+              label="Rentabilidad anualizada"
+              text="Rentabilidad anualizada de esta posición: tiene en cuenta cuándo se compró cada lote, con los dividendos incluidos."
+            />
           </span>
         )}
       </div>
