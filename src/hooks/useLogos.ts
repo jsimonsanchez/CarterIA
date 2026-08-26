@@ -3,10 +3,9 @@ import { db } from '../db/db'
 import type { SymbolMapping } from '../domain/types'
 
 /**
- * URL (servida por nuestro propio proxy) del logo de cada símbolo. `null` =
- * sin logo disponible. El navegador nunca contacta a api.twelvedata.com
- * directamente, así que funciona igual detrás de una red que bloquee ese
- * dominio de terceros.
+ * URL de origen del logo de cada símbolo (la del proveedor), o `null` si no
+ * tiene. Quien la pinta es `SymbolLogo`, que decide cómo traerla sin que el
+ * navegador contacte nunca con esos dominios de terceros.
  *
  * Como los logos no cambian nunca, se resuelve dónde está UNA sola vez por
  * símbolo y se guarda en `symbolMappings`; a partir de ahí solo se piden los
@@ -38,7 +37,7 @@ export function useLogos(symbols: string[]): Record<string, string | null> {
           pending.push({ symbol, mapping })
           return
         }
-        next[symbol] = mapping.logoUrl === null ? null : toProxyUrl(mapping.logoUrl)
+        next[symbol] = mapping.logoUrl
       })
 
       if (!cancelled) setUrls(next)
@@ -53,7 +52,7 @@ export function useLogos(symbols: string[]): Record<string, string | null> {
 
         await db.symbolMappings.put({ ...mapping, logoUrl: resolved })
         if (resolved !== null && !cancelled) {
-          setUrls((prev) => ({ ...prev, [symbol]: toProxyUrl(resolved) }))
+          setUrls((prev) => ({ ...prev, [symbol]: resolved }))
         }
       }
     }
@@ -65,10 +64,6 @@ export function useLogos(symbols: string[]): Record<string, string | null> {
   }, [key])
 
   return urls
-}
-
-function toProxyUrl(logoUrl: string): string {
-  return `/api/logo?src=${encodeURIComponent(logoUrl)}`
 }
 
 async function resolveLogo(mapping: SymbolMapping): Promise<string | null | 'retry'> {

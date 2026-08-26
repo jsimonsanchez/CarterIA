@@ -1,6 +1,7 @@
 import { useLogos } from '../hooks/useLogos'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { formatEur, formatNativePrice } from '../utils/format'
+import { SymbolLogo } from './SymbolLogo'
 
 const MAX_MOVERS = 6
 
@@ -48,19 +49,7 @@ export function DayMoversPanel({ rows }: { rows: PortfolioRow[] }) {
             <div key={row.symbol} className={`mover-card ${up ? 'mover-up' : 'mover-down'}`} title={row.name}>
               <div className="mover-top">
                 <span className="mover-symbol-group">
-                  {logo && (
-                    <img
-                      src={logo}
-                      alt=""
-                      className="mover-logo"
-                      width={18}
-                      height={18}
-                      decoding="async"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none'
-                      }}
-                    />
-                  )}
+                  {logo && <SymbolLogo url={logo} size={18} className="mover-logo" />}
                   <span className="mover-symbol">{row.symbol}</span>
                 </span>
                 <span className="mover-arrow">{up ? '▲' : '▼'}</span>

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "images": {
+    "sizes": [16, 32, 48, 64],
+    "minimumCacheTTL": 31536000,
+    "formats": ["image/webp"],
+    "remotePatterns": [
+      { "protocol": "https", "hostname": "financialmodelingprep.com", "pathname": "/image-stock/**" },
+      { "protocol": "https", "hostname": "api.twelvedata.com", "pathname": "/logo/**" },
+      { "protocol": "https", "hostname": "www.google.com", "pathname": "/s2/favicons" }
+    ]
+  }
+}

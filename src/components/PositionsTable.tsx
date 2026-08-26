@@ -4,6 +4,7 @@ import { useLogos } from '../hooks/useLogos'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { formatEur, formatNativePrice, formatPct } from '../utils/format'
 import { PositionDetail } from './PositionDetail'
+import { SymbolLogo } from './SymbolLogo'
 
 type SortKey = 'symbol' | 'quantity' | 'averageCost' | 'price' | 'value' | 'pnl' | 'pnlPct'
 type SortDir = 'asc' | 'desc'
@@ -156,23 +157,7 @@ function PositionRow({
           <div className="symbol-cell">
             <span className="symbol-ticker">
               <strong>{row.symbol}</strong>
-              {logo && (
-                <img
-                  src={logo}
-                  alt=""
-                  className="symbol-logo"
-                  // Se muestra a 16px: con las medidas declaradas y carga
-                  // diferida, los logos de las filas que quedan fuera de
-                  // pantalla no se descargan ni se decodifican.
-                  width={16}
-                  height={16}
-                  loading="lazy"
-                  decoding="async"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none'
-                  }}
-                />
-              )}
+              {logo && <SymbolLogo url={logo} size={16} className="symbol-logo" />}
             </span>
             {row.name && (
               <span className="symbol-name" title={row.name}>

@@ -4,6 +4,7 @@ import { db } from '../db/db'
 import { cagr, MIN_DAYS_TO_ANNUALIZE } from '../domain/xirr'
 import { useLogos } from '../hooks/useLogos'
 import { formatDate, formatEur, formatPct } from '../utils/format'
+import { SymbolLogo } from './SymbolLogo'
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24
 const NO_SYMBOLS: string[] = []
@@ -105,18 +106,7 @@ export function RealizedGainsPanel() {
                                       <span className="symbol-ticker">
                                         {t.symbol}
                                         {logos[t.symbol] && (
-                                          <img
-                                            src={logos[t.symbol]!}
-                                            alt=""
-                                            className="symbol-logo"
-                                            width={16}
-                                            height={16}
-                                            loading="lazy"
-                                            decoding="async"
-                                            onError={(e) => {
-                                              e.currentTarget.style.display = 'none'
-                                            }}
-                                          />
+                                          <SymbolLogo url={logos[t.symbol]!} size={16} className="symbol-logo" />
                                         )}
                                       </span>
                                     </td>
