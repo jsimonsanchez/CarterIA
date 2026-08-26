@@ -72,7 +72,7 @@ export function ImportFeedback({ state }: { state: XtbImportState }) {
           <p>
             {summary.imported} movimientos procesados, {summary.positions} posiciones abiertas,{' '}
             {summary.closedTrades} operaciones cerradas
-            {summary.skipped > 0 && `, ${summary.skipped} filas omitidas`}.
+            {summary.skippedRows.length > 0 && `, ${summary.skippedRows.length} filas omitidas`}.
           </p>
           {summary.warnings.length > 0 && (
             <details>
@@ -80,6 +80,18 @@ export function ImportFeedback({ state }: { state: XtbImportState }) {
               <ul>
                 {summary.warnings.slice(0, 20).map((w) => (
                   <li key={w.rowId}>{w.message}</li>
+                ))}
+              </ul>
+            </details>
+          )}
+          {summary.skippedRows.length > 0 && (
+            <details>
+              <summary>{summary.skippedRows.length} filas omitidas</summary>
+              <ul>
+                {summary.skippedRows.slice(0, 20).map((s) => (
+                  <li key={s.row}>
+                    Fila {s.row}: {s.reason}
+                  </li>
                 ))}
               </ul>
             </details>

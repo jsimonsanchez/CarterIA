@@ -15,7 +15,8 @@ async function main() {
 
   const result = await parseXtbWorkbook(arrayBuffer as ArrayBuffer)
   console.log('transactions:', result.transactions.length)
-  console.log('skipped:', result.skipped)
+  console.log('skipped:', result.skippedRows.length)
+  for (const s of result.skippedRows) console.log('  -', s.row, s.reason)
   console.log('warnings:', result.warnings.length)
   for (const w of result.warnings.slice(0, 20)) console.log('  -', w.rowId, w.message)
 

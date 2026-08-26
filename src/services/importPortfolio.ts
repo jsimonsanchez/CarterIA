@@ -1,11 +1,11 @@
 import { db } from '../db/db'
 import { computePositions } from '../domain/positions'
 import { ensureSymbolMappings } from '../domain/symbolResolver'
-import type { XtbImportWarning } from '../import/xtbImporter'
+import type { XtbImportWarning, XtbSkippedRow } from '../import/xtbImporter'
 
 export interface ImportSummary {
   imported: number
-  skipped: number
+  skippedRows: XtbSkippedRow[]
   warnings: XtbImportWarning[]
   positions: number
   closedTrades: number
@@ -48,7 +48,7 @@ export async function importXtbFile(file: File): Promise<ImportSummary> {
 
   return {
     imported: result.transactions.length,
-    skipped: result.skipped,
+    skippedRows: result.skippedRows,
     warnings: result.warnings,
     positions: positions.length,
     closedTrades: closedResult.trades.length,

@@ -28,11 +28,17 @@ export interface XtbImportWarning {
   message: string
 }
 
+/** Fila de la hoja "Cash Operations" ignorada a propósito (fila de totales, filas vacías de cierre de hoja). */
+export interface XtbSkippedRow {
+  /** Número de fila tal cual en el .xlsx (para poder localizarla abriendo el extracto). */
+  row: number
+  reason: string
+}
+
 export interface XtbImportResult {
   transactions: Transaction[]
   warnings: XtbImportWarning[]
-  /** Filas ignoradas a propósito (fila de totales, filas vacías de cierre de hoja). */
-  skipped: number
+  skippedRows: XtbSkippedRow[]
 }
 
 /**
@@ -70,14 +76,17 @@ export async function parseXtbWorkbook(buffer: ArrayBuffer): Promise<XtbImportRe
 
   const transactions: Transaction[] = []
   const warnings: XtbImportWarning[] = []
-  let skipped = 0
+  const skippedRows: XtbSkippedRow[] = []
 
   sheet.eachRow((row, rowNumber) => {
     if (rowNumber <= 5) return // metadatos + cabecera
 
     const rawType = row.getCell(idxType).text?.trim()
     if (!rawType || rawType === 'Total') {
-      skipped++
+      skippedRows.push({
+        row: rowNumber,
+        reason: rawType === 'Total' ? 'Fila de totales' : 'Fila sin tipo de operación (vacía)',
+      })
       return
     }
 
@@ -123,5 +132,5 @@ export async function parseXtbWorkbook(buffer: ArrayBuffer): Promise<XtbImportRe
     })
   })
 
-  return { transactions, warnings, skipped }
+  return { transactions, warnings, skippedRows }
 }
