@@ -202,6 +202,25 @@
   white-space: nowrap;
 }
 
+/* Contorno en vez de relleno: una acción destructiva y poco frecuente no
+   debe competir visualmente con el resto de botones de la cabecera. */
+.button-danger {
+  background: transparent;
+  color: var(--negative);
+  border: 1px solid color-mix(in srgb, var(--negative) 45%, transparent);
+  box-shadow: none;
+}
+
+.button-danger:hover:not(:disabled) {
+  background: var(--negative-soft);
+  filter: none;
+  box-shadow: none;
+}
+
+.button-danger:focus-visible {
+  outline-color: var(--negative);
+}
+
 @media (max-width: 640px) {
   .import-btn-suffix {
     display: none;
@@ -223,6 +242,12 @@
 .tabs-left {
   display: flex;
   gap: 4px;
+}
+
+.tabs-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .tab {

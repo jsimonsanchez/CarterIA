@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState } from 'react'
 import './App.css'
+import { db } from './db/db'
 import { DayMoversPanel } from './components/DayMoversPanel'
 import { ImportButton, ImportFeedback, useXtbImport } from './components/ImportPanel'
 import { PositionsTable } from './components/PositionsTable'
@@ -33,6 +34,21 @@ function App() {
     }
   }
 
+  async function handleClearAll() {
+    const confirmed = window.confirm(
+      'Se borrará toda la información de Cartera Tracker en este dispositivo (posiciones, movimientos, operaciones cerradas y precios en caché). Esta acción no se puede deshacer. ¿Continuar?',
+    )
+    if (!confirmed) return
+
+    await Promise.all([
+      db.transactions.clear(),
+      db.positions.clear(),
+      db.priceCache.clear(),
+      db.symbolMappings.clear(),
+      db.closedTrades.clear(),
+    ])
+  }
+
   return (
     <div className="app">
       <header className="app-header">
@@ -61,7 +77,12 @@ function App() {
             Posiciones cerradas
           </button>
         </div>
-        <ImportButton state={importState} />
+        <div className="tabs-right">
+          <ImportButton state={importState} />
+          <button className="button button-sm button-danger" onClick={handleClearAll}>
+            Borrar todo
+          </button>
+        </div>
       </nav>
 
       <ImportFeedback state={importState} />
