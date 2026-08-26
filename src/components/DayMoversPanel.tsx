@@ -9,6 +9,10 @@ export function DayMoversPanel({ rows }: { rows: PortfolioRow[] }) {
     .filter((r) => r.dayChangePct !== undefined)
     .sort((a, b) => Math.abs(b.dayChangePct!) - Math.abs(a.dayChangePct!))
     .slice(0, MAX_MOVERS)
+    // El filtro anterior se queda con los de mayor volatilidad (a favor o
+    // en contra); una vez elegidos, se muestran de más positivo a más
+    // negativo, no por magnitud.
+    .sort((a, b) => b.dayChangePct! - a.dayChangePct!)
 
   const logos = useLogos(movers.map((m) => m.symbol))
 
