@@ -69,6 +69,7 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
         value={formatEur(marketValue + cashBalance)}
         subLines={[
           `Coste de la cartera: ${formatEur(costBasis)}`,
+          `Posiciones abiertas: ${rows.length}`,
           `Posiciones: ${formatEur(marketValue)}`,
           `Liquidez: ${formatEur(cashBalance)}`,
         ]}
