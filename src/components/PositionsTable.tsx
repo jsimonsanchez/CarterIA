@@ -141,7 +141,11 @@ function PositionRow({ row, expanded, onToggle }: { row: PortfolioRow; expanded:
         <td>
           <div className="symbol-cell">
             <strong>{row.symbol}</strong>
-            {row.name && <span className="symbol-name">{row.name}</span>}
+            {row.name && (
+              <span className="symbol-name" title={row.name}>
+                {row.name}
+              </span>
+            )}
           </div>
         </td>
         <td className="num">{row.quantity.toLocaleString('es-ES', { maximumFractionDigits: 4 })}</td>
