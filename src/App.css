@@ -471,23 +471,33 @@
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  /* Dos filas por tarjeta: etiqueta y contenido. Las tarjetas se acoplan a
+     ellas con subgrid. */
+  grid-auto-rows: auto auto;
   gap: 18px 24px;
   align-items: start;
 }
 
+/* Cada tarjeta comparte las filas del grid padre (subgrid): una fila para
+   la etiqueta y otra para el resto. Así todas las etiquetas de una misma
+   fila miden lo mismo y los importes quedan alineados, reservando solo el
+   alto que necesite la etiqueta más larga — con una altura fija se
+   desperdiciaba una línea en los anchos donde ninguna se parte. */
 .summary-stat {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 2;
+  /* El subgrid hereda el hueco de 18px del padre, pensado para separar unas
+     tarjetas de otras; entre la etiqueta y su cifra sobra casi todo. */
+  row-gap: 3px;
+  min-width: 0;
+}
+
+.summary-stat-body {
   display: flex;
   flex-direction: column;
   gap: 3px;
   min-width: 0;
-}
-
-/* Unas etiquetas caben en una línea y otras necesitan dos, así que la cifra
-   de debajo arrancaba a distinta altura en cada columna. Reservando dos
-   líneas para todas, los importes quedan alineados entre sí. Solo aplica al
-   panel de resumen: es donde conviven en una misma fila. */
-.summary-stat .card-label {
-  min-height: 2lh;
 }
 
 .card-label {

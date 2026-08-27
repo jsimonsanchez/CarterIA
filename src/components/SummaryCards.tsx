@@ -99,10 +99,12 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
       <div className="summary-grid">
         <div className="summary-stat">
           <span className="card-label">Valor Total</span>
-          <span className="card-value">{formatEur(portfolioValue)}</span>
-          <span className="card-sub">Posiciones {formatEur(marketValue)}</span>
-          <span className="card-sub">Liquidez {formatEur(cashBalance)}</span>
-          {priceHint && <span className="card-hint">{priceHint}</span>}
+          <div className="summary-stat-body">
+            <span className="card-value">{formatEur(portfolioValue)}</span>
+            <span className="card-sub">Posiciones {formatEur(marketValue)}</span>
+            <span className="card-sub">Liquidez {formatEur(cashBalance)}</span>
+            {priceHint && <span className="card-hint">{priceHint}</span>}
+          </div>
         </div>
         <Stat
           label="Coste de la cartera"
@@ -134,15 +136,20 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
           }
         />
         <Stat
-          label="Total (+ dividendos e intereses)"
+          label="Total"
           value={formatEur(total)}
           sub={totalPct !== undefined ? formatPct(totalPct) : undefined}
           tone={total >= 0 ? 'positive' : 'negative'}
-          title={`Rendimiento de todo lo aportado: ${formatEur(portfolioValue)} de valor actual frente a ${formatEur(totalDeposits)} de ingresos de efectivo.`}
+          // Lo que la etiqueta ya no dice (que incluye dividendos e
+          // intereses) pasa a la explicación, para no ocupar dos líneas.
+          title={
+            `Rendimiento de todo lo aportado, con dividendos e intereses incluidos: ` +
+            `${formatEur(portfolioValue)} de valor actual frente a ${formatEur(totalDeposits)} de ingresos de efectivo.`
+          }
         />
         {xirrPct !== undefined && (
           <Stat
-            label={`Rentabilidad anualizada ${usedFallback ? '(aprox.)' : '(XIRR)'}`}
+            label={usedFallback ? 'XIRR (aprox.)' : 'XIRR'}
             value={formatPct(xirrPct)}
             tone={xirrPct >= 0 ? 'positive' : 'negative'}
             title={
@@ -176,8 +183,10 @@ function Stat({
         {label}
         {title && <InfoPopover label={label} text={title} />}
       </span>
-      <span className={`card-value ${tone ?? ''}`}>{value}</span>
-      {sub && <span className={`card-sub ${tone ?? ''}`}>{sub}</span>}
+      <div className="summary-stat-body">
+        <span className={`card-value ${tone ?? ''}`}>{value}</span>
+        {sub && <span className={`card-sub ${tone ?? ''}`}>{sub}</span>}
+      </div>
     </div>
   )
 }
