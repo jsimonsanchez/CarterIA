@@ -482,6 +482,14 @@
   min-width: 0;
 }
 
+/* Unas etiquetas caben en una línea y otras necesitan dos, así que la cifra
+   de debajo arrancaba a distinta altura en cada columna. Reservando dos
+   líneas para todas, los importes quedan alineados entre sí. Solo aplica al
+   panel de resumen: es donde conviven en una misma fila. */
+.summary-stat .card-label {
+  min-height: 2lh;
+}
+
 .card-label {
   font-size: 12px;
   font-weight: 600;
