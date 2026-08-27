@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { formatNativePrice, formatPct } from './format'
+import { formatNativePrice, formatPct, priceDecimalsFor } from './format'
 
 describe('formatNativePrice', () => {
   it('convierte los peniques del Reino Unido a libras', () => {
-    // Yahoo devuelve las plazas de Londres en peniques: 1749,5 GBp = 17,50 GBP.
-    assert.equal(formatNativePrice(1749.5, 'GBp'), '17,5 GBP')
-    assert.equal(formatNativePrice(1749.5, 'GBX'), '17,5 GBP')
+    // Yahoo devuelve las plazas de Londres en peniques: 1749,5 GBp = 17,495 GBP.
+    assert.equal(formatNativePrice(1749.5, 'GBp'), '17,50 GBP')
+    assert.equal(formatNativePrice(1749.5, 'GBX', 3), '17,495 GBP')
   })
 
   it('deja el resto de divisas tal cual', () => {
@@ -15,13 +15,40 @@ describe('formatNativePrice', () => {
   })
 
   it('no confunde GBP (libras) con GBp (peniques)', () => {
-    assert.equal(formatNativePrice(17.5, 'GBP'), '17,5 GBP')
+    assert.equal(formatNativePrice(17.5, 'GBP'), '17,50 GBP')
   })
 
-  it('permite más decimales para instrumentos de precio bajo', () => {
-    // Con los 2 decimales por defecto se perdería la cotización real.
-    assert.equal(formatNativePrice(0.0345, 'EUR'), '0,03 EUR')
+  it('rellena con ceros hasta los decimales pedidos, para alinear la columna', () => {
+    assert.equal(formatNativePrice(266, 'EUR'), '266,00 EUR')
+    assert.equal(formatNativePrice(266, 'EUR', 4), '266,0000 EUR')
     assert.equal(formatNativePrice(0.0345, 'EUR', 4), '0,0345 EUR')
+  })
+})
+
+describe('priceDecimalsFor', () => {
+  it('se queda en 2 cuando ningún precio necesita más', () => {
+    assert.equal(priceDecimalsFor([{ price: 178.28, currency: 'EUR' }, { price: 6.7, currency: 'EUR' }]), 2)
+  })
+
+  it('sube a los que necesite el precio más exigente', () => {
+    // Un solo valor con 4 decimales manda sobre toda la columna.
+    assert.equal(
+      priceDecimalsFor([{ price: 178.28, currency: 'EUR' }, { price: 0.0345, currency: 'EUR' }]),
+      4,
+    )
+  })
+
+  it('tiene en cuenta los decimales que aparecen al pasar peniques a libras', () => {
+    // 1749,5 GBp = 17,495 GBP: necesita 3 aunque el original solo tenga 1.
+    assert.equal(priceDecimalsFor([{ price: 1749.5, currency: 'GBp' }]), 3)
+  })
+
+  it('no pasa de 4 decimales, para no ensanchar la columna sin motivo', () => {
+    assert.equal(priceDecimalsFor([{ price: 1.23456789, currency: 'EUR' }]), 4)
+  })
+
+  it('devuelve 2 sin precios', () => {
+    assert.equal(priceDecimalsFor([]), 2)
   })
 })
 

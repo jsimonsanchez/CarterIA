@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { isPriceStale } from '../domain/priceFreshness'
 import { useLogos } from '../hooks/useLogos'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
-import { formatEur, formatNativePrice, formatPct } from '../utils/format'
+import { formatEur, formatNativePrice, formatPct, priceDecimalsFor } from '../utils/format'
 import { InfoPopover } from './InfoPopover'
 import { PositionDetail } from './PositionDetail'
 import { SymbolLogo } from './SymbolLogo'
@@ -57,6 +57,15 @@ export function PositionsTable({ rows, onRefresh, refreshing, refreshError }: Po
   if (rows.length === 0) {
     return <p className="empty-state">Sin posiciones — importa un extracto de XTB para empezar.</p>
   }
+
+  // Los mismos decimales para toda la columna, calculados sobre TODAS las
+  // posiciones y no solo sobre las filtradas: así buscar no cambia el formato
+  // de las filas que siguen a la vista.
+  const priceDecimals = priceDecimalsFor(
+    rows
+      .filter((r) => r.currentPriceNative !== undefined && r.currentCurrency !== undefined)
+      .map((r) => ({ price: r.currentPriceNative!, currency: r.currentCurrency! })),
+  )
 
   const normalizedQuery = query.trim().toLowerCase()
   const filtered = normalizedQuery
@@ -125,6 +134,7 @@ export function PositionsTable({ rows, onRefresh, refreshing, refreshError }: Po
                   key={row.symbol}
                   row={row}
                   logo={logos[row.symbol]}
+                  priceDecimals={priceDecimals}
                   expanded={expanded === row.symbol}
                   onToggle={() => setExpanded(expanded === row.symbol ? null : row.symbol)}
                 />
@@ -140,11 +150,13 @@ export function PositionsTable({ rows, onRefresh, refreshing, refreshError }: Po
 function PositionRow({
   row,
   logo,
+  priceDecimals,
   expanded,
   onToggle,
 }: {
   row: PortfolioRow
   logo?: string | null
+  priceDecimals: number
   expanded: boolean
   onToggle: () => void
 }) {
@@ -176,7 +188,7 @@ function PositionRow({
             </span>
           ) : row.currentPriceNative !== undefined ? (
             <>
-              {formatNativePrice(row.currentPriceNative, row.currentCurrency!, 4)}
+              {formatNativePrice(row.currentPriceNative, row.currentCurrency!, priceDecimals)}
               {isStale && (
                 <span
                   className="stale-badge"
