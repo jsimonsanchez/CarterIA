@@ -544,8 +544,33 @@
      todo el espacio sobrante y no pierde columnas por su culpa en pantallas
      anchas. */
   grid-template-columns: minmax(0, 1fr) 150px;
-  gap: 20px;
+  /* Dos filas: la barra de búsqueda y, debajo, el contenido. El gráfico se
+     coloca en la segunda para arrancar a la altura de la tabla y no de la
+     barra, que es lo que le queda al lado. */
+  grid-template-rows: auto auto;
+  /* Hueco distinto por eje: 10px entre la barra y el contenido, 20px entre
+     columnas. El del eje vertical NO puede cambiarse dentro del subgrid: si
+     el hijo usa otro, sus filas dejan de coincidir con las del padre y el
+     gráfico se descuadra respecto a la tabla. */
+  gap: 10px 20px;
   align-items: start;
+}
+
+.positions-column {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 2;
+  min-width: 0;
+}
+
+/* La separación la pone ahora el hueco del grid. */
+.positions-column .table-toolbar {
+  margin-bottom: 0;
+}
+
+.main-grid .chart-container {
+  grid-column: 2;
+  grid-row: 2;
 }
 
 .main-grid > * {
@@ -555,8 +580,21 @@
 }
 
 @media (max-width: 1000px) {
+  /* En una sola columna el gráfico va debajo de la tabla, sin filas que
+     compartir: se deshace el acoplamiento. */
   .main-grid {
     grid-template-columns: 1fr;
+    grid-template-rows: none;
+  }
+
+  .positions-column {
+    display: block;
+    grid-row: auto;
+  }
+
+  .main-grid .chart-container {
+    grid-column: auto;
+    grid-row: auto;
   }
 }
 

@@ -91,7 +91,10 @@ export function PositionsTable({ rows, onRefresh, refreshing, refreshError }: Po
   }
 
   return (
-    <div>
+    // Dos hijos exactamente —barra y contenido— porque la columna se acopla
+    // a las filas del grid padre para que el gráfico de al lado empiece a la
+    // altura de la tabla y no de la barra de búsqueda.
+    <div className="positions-column">
       <div className="table-toolbar">
         <input
           className="table-search"
@@ -104,8 +107,9 @@ export function PositionsTable({ rows, onRefresh, refreshing, refreshError }: Po
           {refreshing ? 'Actualizando…' : 'Actualizar precios'}
         </button>
       </div>
-      {refreshError && <p className="warning-text">{refreshError}</p>}
-      <div className="positions-table-wrapper scroll-thin">
+      <div className="positions-column-content">
+        {refreshError && <p className="warning-text">{refreshError}</p>}
+        <div className="positions-table-wrapper scroll-thin">
         <table className="positions-table">
           <thead>
             <tr>
@@ -140,8 +144,9 @@ export function PositionsTable({ rows, onRefresh, refreshing, refreshError }: Po
                 />
               ))
             )}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )
