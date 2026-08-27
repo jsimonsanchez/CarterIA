@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Fragment, useState } from 'react'
 import { db } from '../db/db'
+import { annualizedReturnOfTrades } from '../domain/performance'
 import type { ClosedTrade } from '../domain/types'
 import { cagr, MIN_DAYS_TO_ANNUALIZE } from '../domain/xirr'
 import { useLogos } from '../hooks/useLogos'
@@ -120,6 +121,7 @@ function SymbolBreakdown({
           <th className="num">Venta</th>
           <th className="num">Plusvalía</th>
           <th className="num">% Plusvalía</th>
+          <th className="num">% Anualizado</th>
         </tr>
       </thead>
       <tbody>
@@ -129,6 +131,8 @@ function SymbolBreakdown({
           const key = `${year}|${symbol}`
           const expanded = openSymbol === key
           const tone = totals.pnl >= 0 ? 'positive' : 'negative'
+          const annualized = annualizedReturnOfTrades(symbolTrades)
+          const annualizedPct = annualized !== undefined ? annualized * 100 : undefined
 
           return (
             <Fragment key={symbol}>
@@ -145,10 +149,20 @@ function SymbolBreakdown({
                 <td className="num">{formatEur(totals.sale)}</td>
                 <td className={`num ${tone}`}>{formatEur(totals.pnl)}</td>
                 <td className={`num ${tone}`}>{totals.pct !== undefined ? formatPct(totals.pct) : '—'}</td>
+                <td
+                  className={`num ${annualizedPct !== undefined ? (annualizedPct >= 0 ? 'positive' : 'negative') : ''}`}
+                  title={
+                    annualizedPct !== undefined
+                      ? 'Rentabilidad anualizada de todas las operaciones de este valor: pondera por importe y por el tiempo que estuvo invertido cada uno.'
+                      : `Menos de ${MIN_DAYS_TO_ANNUALIZE} días entre la primera compra y la última venta — no se anualiza`
+                  }
+                >
+                  {annualizedPct !== undefined ? formatPct(annualizedPct) : '—'}
+                </td>
               </tr>
               {expanded && (
                 <tr className="detail-row">
-                  <td colSpan={6}>
+                  <td colSpan={7}>
                     <div className="position-detail">
                       <TradeList trades={symbolTrades} />
                     </div>

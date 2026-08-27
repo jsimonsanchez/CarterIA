@@ -1,3 +1,34 @@
+import { annualizedReturn } from './xirr'
+
+/** Lo mínimo que hace falta de una operación cerrada para anualizarla. */
+interface TradeFlow {
+  openDate: string
+  closeDate: string
+  purchaseValueEur: number
+  saleValueEur: number
+}
+
+/**
+ * Rentabilidad anualizada de un conjunto de operaciones cerradas, tratando
+ * cada una como dos flujos de caja: lo que costó el día que se abrió y lo
+ * que se obtuvo el día que se cerró.
+ *
+ * No es la media de los porcentajes de cada operación: eso daría el mismo
+ * peso a una de 100 € que a una de 10.000 €, y no tendría en cuenta cuánto
+ * tiempo estuvo invertido cada importe. Con los flujos y sus fechas, un
+ * acierto grande y rápido pesa lo que le corresponde.
+ *
+ * `undefined` cuando el recorrido entre la primera compra y la última venta
+ * es demasiado corto para anualizar sin dar una cifra absurda.
+ */
+export function annualizedReturnOfTrades(trades: TradeFlow[]): number | undefined {
+  const flows = trades.flatMap((t) => [
+    { date: new Date(t.openDate), amount: -t.purchaseValueEur },
+    { date: new Date(t.closeDate), amount: t.saleValueEur },
+  ])
+  return annualizedReturn(flows)
+}
+
 /**
  * Rendimiento total de la cartera: cuánto ha crecido TODO el dinero que se
  * ha metido en el broker. Si se ingresan 100.000 € y hoy entre posiciones y
