@@ -20,8 +20,8 @@ describe('formatNativePrice', () => {
 
   it('rellena con ceros hasta los decimales pedidos, para alinear la columna', () => {
     assert.equal(formatNativePrice(266, 'EUR'), '266,00 EUR')
-    assert.equal(formatNativePrice(266, 'EUR', 4), '266,0000 EUR')
-    assert.equal(formatNativePrice(0.0345, 'EUR', 4), '0,0345 EUR')
+    assert.equal(formatNativePrice(266, 'EUR', 3), '266,000 EUR')
+    assert.equal(formatNativePrice(0.034, 'EUR', 3), '0,034 EUR')
   })
 })
 
@@ -31,10 +31,10 @@ describe('priceDecimalsFor', () => {
   })
 
   it('sube a los que necesite el precio más exigente', () => {
-    // Un solo valor con 4 decimales manda sobre toda la columna.
+    // Un solo valor con 3 decimales manda sobre toda la columna.
     assert.equal(
-      priceDecimalsFor([{ price: 178.28, currency: 'EUR' }, { price: 0.0345, currency: 'EUR' }]),
-      4,
+      priceDecimalsFor([{ price: 178.28, currency: 'EUR' }, { price: 0.034, currency: 'EUR' }]),
+      3,
     )
   })
 
@@ -43,8 +43,10 @@ describe('priceDecimalsFor', () => {
     assert.equal(priceDecimalsFor([{ price: 1749.5, currency: 'GBp' }]), 3)
   })
 
-  it('no pasa de 4 decimales, para no ensanchar la columna sin motivo', () => {
-    assert.equal(priceDecimalsFor([{ price: 1.23456789, currency: 'EUR' }]), 4)
+  it('no pasa de 3 decimales, para no ensanchar la columna sin motivo', () => {
+    assert.equal(priceDecimalsFor([{ price: 1.23456789, currency: 'EUR' }]), 3)
+    // Un precio de 4 decimales se redondea a 3 en vez de arrastrar a la columna.
+    assert.equal(priceDecimalsFor([{ price: 0.0345, currency: 'EUR' }]), 3)
   })
 
   it('devuelve 2 sin precios', () => {

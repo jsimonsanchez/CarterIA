@@ -13,8 +13,12 @@ export function formatDate(iso: string): string {
 
 /** Decimales por defecto de un importe monetario. */
 const DEFAULT_PRICE_DECIMALS = 2
-/** Tope de decimales: más allá, la columna se ensancha sin aportar nada. */
-export const MAX_PRICE_DECIMALS = 4
+/**
+ * Tope de decimales: más allá, la columna se ensancha sin aportar nada. Un
+ * único valor con un decimal extra obligaría a toda la columna a llevarlo, y
+ * el ancho que cuesta no compensa la precisión que aporta.
+ */
+export const MAX_PRICE_DECIMALS = 3
 
 /**
  * Convierte un precio a la divisa en la que se muestra. Los proveedores
