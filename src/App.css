@@ -203,12 +203,15 @@
 }
 
 /* El icono se ve pequeño, pero el padding le da un área de pulsación
-   holgada para el dedo sin ocupar más sitio en pantalla. */
+   holgada para el dedo. Los márgenes negativos cancelan ese padding en el
+   cálculo del espacio ocupado: el área táctil sigue siendo de 29px, pero a
+   efectos de maquetación el botón mide lo que el icono, así que no empuja
+   al texto de al lado ni lo obliga a partirse. */
 .info-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin: -8px 0 -8px 3px;
+  margin: -8px -8px -8px -3px;
   padding: 8px;
   background: none;
   border: none;
@@ -506,6 +509,14 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-muted);
+}
+
+/* El icono como elemento propio junto al texto, no dentro del flujo de
+   palabras: si va en el flujo y no cabe tras la última, se descuelga solo a
+   la línea siguiente. */
+.summary-stat .card-label {
+  display: flex;
+  align-items: flex-start;
 }
 
 .card-value {
