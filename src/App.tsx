@@ -15,7 +15,7 @@ const AllocationChart = lazy(() => import('./components/AllocationChart').then((
 type Tab = 'cartera' | 'realizado'
 
 function App() {
-  const rows = usePortfolioRows()
+  const { rows, isLoading } = usePortfolioRows()
   const [refreshing, setRefreshing] = useState(false)
   const [refreshError, setRefreshError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('cartera')
@@ -115,6 +115,7 @@ function App() {
           <div className="main-grid">
             <PositionsTable
               rows={rows}
+              isLoading={isLoading}
               onRefresh={handleRefresh}
               refreshing={refreshing}
               refreshError={refreshError}

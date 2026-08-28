@@ -41,12 +41,13 @@ function sortValue(row: PortfolioRow, key: SortKey): number | string {
 
 interface PositionsTableProps {
   rows: PortfolioRow[]
+  isLoading: boolean
   onRefresh: () => void
   refreshing: boolean
   refreshError: string | null
 }
 
-export function PositionsTable({ rows, onRefresh, refreshing, refreshError }: PositionsTableProps) {
+export function PositionsTable({ rows, isLoading, onRefresh, refreshing, refreshError }: PositionsTableProps) {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('value')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -55,7 +56,13 @@ export function PositionsTable({ rows, onRefresh, refreshing, refreshError }: Po
   const logos = useLogos(rows.map((r) => r.symbol))
 
   if (rows.length === 0) {
-    return <p className="empty-state">Sin posiciones — importa un extracto de XTB para empezar.</p>
+    // Mientras se leen los datos no se puede afirmar que no haya posiciones:
+    // decirlo sería anunciar una cartera vacía a quien sí tiene valores.
+    return isLoading ? (
+      <p className="empty-state">Cargando tu cartera…</p>
+    ) : (
+      <p className="empty-state">Sin posiciones — importa un extracto de XTB para empezar.</p>
+    )
   }
 
   // Los mismos decimales para toda la columna, calculados sobre TODAS las
@@ -139,6 +146,7 @@ export function PositionsTable({ rows, onRefresh, refreshing, refreshError }: Po
                   row={row}
                   logo={logos[row.symbol]}
                   priceDecimals={priceDecimals}
+                  isLoading={isLoading}
                   expanded={expanded === row.symbol}
                   onToggle={() => setExpanded(expanded === row.symbol ? null : row.symbol)}
                 />
@@ -156,12 +164,14 @@ function PositionRow({
   row,
   logo,
   priceDecimals,
+  isLoading,
   expanded,
   onToggle,
 }: {
   row: PortfolioRow
   logo?: string | null
   priceDecimals: number
+  isLoading: boolean
   expanded: boolean
   onToggle: () => void
 }) {
@@ -208,7 +218,9 @@ function PositionRow({
               )}
             </>
           ) : (
-            <span className="card-hint">sin precio</span>
+            // Aún convirtiendo divisas: no es que falte el precio, es que
+            // todavía no está listo.
+            <span className="card-hint">{isLoading ? '…' : 'sin precio'}</span>
           )}
         </td>
         <td className="num">{row.marketValueEur !== undefined ? formatEur(row.marketValueEur) : '—'}</td>

@@ -27,16 +27,24 @@ export interface PortfolioRow {
 /**
  * Posiciones + último precio cacheado + conversión a EUR, recalculado cada
  * vez que cambian las posiciones, la caché de precios o el mapeo de
- * símbolos (todas fuentes reactivas de Dexie). La conversión a EUR es
- * asíncrona (FX en vivo), así que se calcula en un efecto en vez de en el
- * propio `useLiveQuery`.
+ * símbolos (todas fuentes reactivas de Dexie).
+ *
+ * Se publica en dos pasos. Primero, lo que se sabe sin salir a la red —
+ * símbolo, cantidad, coste medio—, para que la tabla aparezca de inmediato;
+ * después, los importes que dependen del tipo de cambio. Antes no se pintaba
+ * ni una fila hasta tener convertidas todas las divisas.
+ *
+ * `isLoading` distingue "todavía no hay datos" de "no hay posiciones": sin
+ * él, mientras cargaba se anunciaba una cartera vacía a quien tiene 27
+ * posiciones.
  */
-export function usePortfolioRows() {
+export function usePortfolioRows(): { rows: PortfolioRow[]; isLoading: boolean } {
   const positions = useLiveQuery(() => db.positions.toArray(), [])
   const priceCache = useLiveQuery(() => db.priceCache.toArray(), [])
   const mappings = useLiveQuery(() => db.symbolMappings.toArray(), [])
 
   const [rows, setRows] = useState<PortfolioRow[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     if (!positions) return
@@ -45,20 +53,27 @@ export function usePortfolioRows() {
     const priceBySymbol = new Map((priceCache ?? []).map((p) => [p.symbol, p]))
     const mappingBySymbol = new Map((mappings ?? []).map((m) => [m.xtbSymbol, m]))
 
+    const baseRow = (pos: (typeof positions)[number]): PortfolioRow => ({
+      symbol: pos.symbol,
+      name: mappingBySymbol.get(pos.symbol)?.name,
+      quantity: pos.quantity,
+      averageCost: pos.averageCost,
+      costBasis: pos.quantity * pos.averageCost,
+    })
+
+    // Paso 1: sin esperar a nada, para que la tabla se vea ya. Se marca como
+    // "cargando" en CADA recálculo, no solo en el primero: al refrescar
+    // precios las filas vuelven a quedarse sin importes un instante, y sin
+    // esto se anunciaría "sin precio" en valores que sí lo tienen.
+    setIsLoading(true)
+    setRows(positions.map(baseRow))
+
     async function compute() {
       const computed = await Promise.all(
         positions!.map(async (pos): Promise<PortfolioRow> => {
           const price = priceBySymbol.get(pos.symbol)
-          const mapping = mappingBySymbol.get(pos.symbol)
-          const costBasis = pos.quantity * pos.averageCost
-
-          const base: PortfolioRow = {
-            symbol: pos.symbol,
-            name: mapping?.name,
-            quantity: pos.quantity,
-            averageCost: pos.averageCost,
-            costBasis,
-          }
+          const base = baseRow(pos)
+          const costBasis = base.costBasis
 
           if (!price) return base
 
@@ -98,7 +113,11 @@ export function usePortfolioRows() {
         }),
       )
 
-      if (!cancelled) setRows(computed)
+      // Paso 2: los importes ya convertidos sustituyen a las filas base.
+      if (!cancelled) {
+        setRows(computed)
+        setIsLoading(false)
+      }
     }
 
     void compute()
@@ -107,7 +126,7 @@ export function usePortfolioRows() {
     }
   }, [positions, priceCache, mappings])
 
-  return rows
+  return { rows, isLoading }
 }
 
 /** Dispara la actualización de precios (Twelve Data → Yahoo → caché) para todas las posiciones actuales. */

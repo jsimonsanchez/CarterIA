@@ -35,6 +35,23 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+        // ExcelJS son ~900 KB, más de la mitad de todo lo precacheado, y solo
+        // hace falta al importar un extracto. Fuera del precacheo no se
+        // descarga en la primera visita; se trae la primera vez que se
+        // importa y a partir de ahí queda en caché.
+        globIgnores: ['**/exceljs*.js'],
+        runtimeCaching: [
+          {
+            // El nombre lleva el hash del contenido, así que nunca cambia sin
+            // cambiar de URL: se puede servir de caché sin revalidar.
+            urlPattern: /\/assets\/exceljs.*\.js$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'cartera-exceljs',
+              expiration: { maxEntries: 2 },
+            },
+          },
+        ],
       },
     }),
   ],
