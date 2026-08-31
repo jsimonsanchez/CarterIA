@@ -37,9 +37,9 @@ export const ISIN_BY_XTB_SYMBOL: Record<string, string> = {
   'XPQP.DE': 'LU0592215403',
   'XUTC.DE': 'IE00BGQYRS42',
 
-  // Cotizan fuera de Alemania, así que hoy no se usan para pedir a Frankfurt.
-  // Se guardan igualmente porque el ISIN es un identificador permanente del
-  // instrumento y volver a recopilarlo cuesta.
+  // Cotizan fuera de Alemania. NO se usan para pedir a Frankfurt: ver
+  // `frankfurtIsinFor`, que es quien filtra. Se guardan porque el ISIN es un
+  // identificador permanente del instrumento y volver a recopilarlo cuesta.
   'AAPL.US': 'US0378331005',
   'ASML.US': 'USN070592100',
   'BLSH.US': 'KYG169101204',
@@ -63,4 +63,24 @@ export const ISIN_BY_XTB_SYMBOL: Record<string, string> = {
   'TAP.US': 'US60871R2094',
   'UBER.US': 'US90353T1007',
   'UNH.US': 'US91324P1021',
+}
+
+/**
+ * ISIN a usar para pedir el cierre a Frankfurt, o `undefined` si no procede.
+ *
+ * Solo vale para los listados alemanes. Frankfurt cotiza **siempre en euros**,
+ * mientras que el precio actual lo pone Yahoo en la divisa del mercado de
+ * origen: juntar un precio en DKK, GBP o USD con un cierre en EUR da
+ * variaciones absurdas. Pasó en producción — Diageo llegó a mostrar
+ * +8.451% (17,09 GBP contra su cierre en euros) y Novo Nordisk +636%, que no
+ * es más que la cotización de la corona danesa.
+ *
+ * `api/price.ts` repite la comprobación mirando la divisa que devuelve Yahoo.
+ * Son dos redes distintas a propósito: esta decide por mercado, aquella por
+ * divisa real, y basta con que una acierte para no volver a publicar un
+ * porcentaje imposible.
+ */
+export function frankfurtIsinFor(xtbSymbol: string): string | undefined {
+  if (!xtbSymbol.endsWith('.DE')) return undefined
+  return ISIN_BY_XTB_SYMBOL[xtbSymbol]
 }

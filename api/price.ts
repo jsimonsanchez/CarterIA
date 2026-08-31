@@ -176,10 +176,14 @@ export default async function handler(request: Request): Promise<Response> {
   ])
 
   if (fromYahoo) {
+    // Frankfurt cotiza siempre en euros. Si el precio viene en otra divisa
+    // (DKK, GBP, USD...), mezclarlo con ese cierre da una variación que en
+    // realidad es el tipo de cambio: Diageo llegó a publicarse con +8.451% y
+    // Novo Nordisk con +636%. Ante la duda se prefiere el cierre de Yahoo,
+    // que al menos está en la misma divisa que el precio.
+    const usarFrankfurt = frankfurtPreviousClose !== null && fromYahoo.currency === 'EUR'
     return Response.json(
-      frankfurtPreviousClose === null
-        ? fromYahoo
-        : { ...fromYahoo, previousClose: frankfurtPreviousClose },
+      usarFrankfurt ? { ...fromYahoo, previousClose: frankfurtPreviousClose } : fromYahoo,
     )
   }
 
