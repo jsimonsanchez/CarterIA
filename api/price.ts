@@ -59,6 +59,48 @@ async function fetchTwelveData(symbol: string, exchange: string | null): Promise
 // servidor concreto, no un bloqueo del proveedor entero) se reintenta con el otro.
 const YAHOO_HOSTS = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com']
 
+// La API de Börse Frankfurt no está documentada y alguna petición suelta se
+// queda colgada más de un minuto. Como su dato es una mejora opcional y no un
+// requisito, se corta pronto y se sigue con el cierre de Yahoo.
+const FRANKFURT_TIMEOUT_MS = 3000
+
+/**
+ * Cierre de la sesión anterior en Börse Frankfurt, que es la plaza que cotiza
+ * XTB. Importa porque Frankfurt negocia hasta las 22:00 y XETRA cierra a las
+ * 17:30: en los ETF de subyacente estadounidense, el cierre de XETRA se deja
+ * fuera la mitad de la sesión americana y la variación diaria sale con un
+ * hueco que no ve el broker (medido: 1,75 puntos de desvío medio con XETRA
+ * frente a 0,24 con Frankfurt).
+ *
+ * Solo se toma el cierre anterior. El precio actual sigue viniendo de Yahoo:
+ * estos ETF se negocian poco en Frankfurt y su último cruce puede ser de hace
+ * horas, además de que la respuesta no dice en qué divisa cotiza.
+ */
+async function fetchFrankfurtPreviousClose(isin: string): Promise<number | null> {
+  const url =
+    'https://api.boerse-frankfurt.de/v1/data/quote_box/single?isin=' +
+    encodeURIComponent(isin) +
+    '&mic=XFRA'
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': YAHOO_USER_AGENT },
+      signal: AbortSignal.timeout(FRANKFURT_TIMEOUT_MS),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    const last = data?.lastPrice
+    const pct = data?.changeToPrevDayInPercent
+    if (typeof last !== 'number' || typeof pct !== 'number') return null
+    // Se reconstruye desde el porcentaje en vez de restar
+    // `changeToPrevDayAbsolute`: viene redondeado a menos decimales y en
+    // precios de un dígito eso ya mueve la variación en la segunda cifra.
+    const previousClose = last / (1 + pct / 100)
+    return Number.isFinite(previousClose) && previousClose > 0 ? previousClose : null
+  } catch {
+    return null
+  }
+}
+
 async function fetchYahooFromHost(host: string, symbol: string): Promise<PriceResult | null> {
   const url = `https://${host}/v8/finance/chart/${encodeURIComponent(symbol)}`
   try {
@@ -120,14 +162,25 @@ export default async function handler(request: Request): Promise<Response> {
   const twelveDataSymbol = url.searchParams.get('twelveDataSymbol')
   const twelveDataExchange = url.searchParams.get('twelveDataExchange')
   const yahooSymbol = url.searchParams.get('yahooSymbol')
+  const isin = url.searchParams.get('isin')
 
   if (!twelveDataSymbol || !yahooSymbol) {
     return Response.json({ error: 'Faltan parámetros twelveDataSymbol/yahooSymbol' }, { status: 400 })
   }
 
-  const fromYahoo = await fetchYahoo(yahooSymbol)
+  // En paralelo: el cierre de Frankfurt no debe añadir latencia al de Yahoo,
+  // que es el que de verdad hace falta para valorar la cartera.
+  const [fromYahoo, frankfurtPreviousClose] = await Promise.all([
+    fetchYahoo(yahooSymbol),
+    isin ? fetchFrankfurtPreviousClose(isin) : Promise.resolve(null),
+  ])
+
   if (fromYahoo) {
-    return Response.json(fromYahoo)
+    return Response.json(
+      frankfurtPreviousClose === null
+        ? fromYahoo
+        : { ...fromYahoo, previousClose: frankfurtPreviousClose },
+    )
   }
 
   const fromTwelveData = await fetchTwelveData(twelveDataSymbol, twelveDataExchange)

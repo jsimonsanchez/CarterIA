@@ -26,6 +26,11 @@ export async function getPrice(mapping: SymbolMapping): Promise<PriceCacheEntry>
     if (mapping.twelveDataExchange) {
       params.set('twelveDataExchange', mapping.twelveDataExchange)
     }
+    // Con ISIN, el proxy toma el cierre anterior de Börse Frankfurt, que es la
+    // plaza del broker; sin él, se queda con el de Yahoo.
+    if (mapping.isin) {
+      params.set('isin', mapping.isin)
+    }
 
     const res = await fetch(`/api/price?${params.toString()}`)
     if (!res.ok) {

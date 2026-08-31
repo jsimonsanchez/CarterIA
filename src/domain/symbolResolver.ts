@@ -1,4 +1,5 @@
 import { db } from '../db/db'
+import { ISIN_BY_XTB_SYMBOL } from '../data/isinBySymbol'
 import { SYMBOL_OVERRIDES } from '../data/symbolOverrides'
 import type { SymbolMapping } from './types'
 import { deriveSymbolMapping } from './symbolSuffixRules'
@@ -7,7 +8,13 @@ const overridesByXtbSymbol = new Map(SYMBOL_OVERRIDES.map((m) => [m.xtbSymbol, m
 
 /** Resuelve un ticker de XTB a Twelve Data/Yahoo: excepción manual primero, si no la regla de sufijo por mercado. */
 export function resolveSymbol(xtbSymbol: string): SymbolMapping | undefined {
-  return overridesByXtbSymbol.get(xtbSymbol) ?? deriveSymbolMapping(xtbSymbol)
+  const mapping = overridesByXtbSymbol.get(xtbSymbol) ?? deriveSymbolMapping(xtbSymbol)
+  if (!mapping) return undefined
+
+  // El ISIN vive aparte de la tabla de excepciones: no corrige un mapeo mal
+  // derivado, solo añade el identificador que necesita Börse Frankfurt.
+  const isin = ISIN_BY_XTB_SYMBOL[xtbSymbol]
+  return isin ? { ...mapping, isin } : mapping
 }
 
 /**
