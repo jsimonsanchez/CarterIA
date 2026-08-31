@@ -59,8 +59,32 @@ async function fetchTwelveData(symbol: string, exchange: string | null): Promise
 // servidor concreto, no un bloqueo del proveedor entero) se reintenta con el otro.
 const YAHOO_HOSTS = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com']
 
+/**
+ * El último elemento de la serie diaria es la barra de hoy (todavía
+ * formándose); el cierre anterior real es el del último día CON dato antes
+ * de esa barra, saltando los huecos que Yahoo deja en null en sesiones sin
+ * ninguna operación (frecuente en ETFs UCITS poco líquidos).
+ */
+function previousCloseFromSeries(result: unknown): number | undefined {
+  const closes = (result as { indicators?: { quote?: { close?: unknown[] }[] } })?.indicators?.quote?.[0]
+    ?.close
+  if (!Array.isArray(closes) || closes.length < 2) return undefined
+  for (let i = closes.length - 2; i >= 0; i--) {
+    if (typeof closes[i] === 'number') return closes[i] as number
+  }
+  return undefined
+}
+
 async function fetchYahooFromHost(host: string, symbol: string): Promise<PriceResult | null> {
-  const url = `https://${host}/v8/finance/chart/${encodeURIComponent(symbol)}`
+  // range=5d&interval=1d: no basta con el precio y "previousClose" del
+  // endpoint por defecto. Ese campo (meta.previousClose / chartPreviousClose)
+  // lo calcula Yahoo sobre el propio rango consultado y, en valores poco
+  // líquidos (p.ej. XUTC.DE, sin operaciones el viernes), puede devolver el
+  // cierre de varias sesiones atrás sin que coincida con ningún cierre real
+  // — comprobado también con AAPL: pedir un rango explícito hace que ese
+  // campo deje de fiarse aunque el valor sea líquido. Se pide la serie de
+  // cierres diarios y el cierre anterior se calcula aquí a partir de ella.
+  const url = `https://${host}/v8/finance/chart/${encodeURIComponent(symbol)}?range=5d&interval=1d`
   try {
     const res = await fetch(url, { headers: { 'User-Agent': YAHOO_USER_AGENT } })
     if (!res.ok) return null
@@ -68,7 +92,8 @@ async function fetchYahooFromHost(host: string, symbol: string): Promise<PriceRe
     const result = data?.chart?.result?.[0]
     const price = result?.meta?.regularMarketPrice
     const currency = result?.meta?.currency
-    const previousClose = result?.meta?.previousClose ?? result?.meta?.chartPreviousClose
+    const previousClose =
+      previousCloseFromSeries(result) ?? result?.meta?.previousClose ?? result?.meta?.chartPreviousClose
     if (typeof price !== 'number' || !currency) return null
 
     const regularMarketTime = result?.meta?.regularMarketTime
