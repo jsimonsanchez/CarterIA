@@ -18,6 +18,15 @@ describe('frankfurtIsinFor', () => {
     }
   })
 
+  // El cierre de Frankfurt arrastra la tarde americana. En un instrumento que
+  // cierra a las 17:30 esa tarde no existe, asi que ese cierre solo mete
+  // error: IB1T se publico con +1,11% cuando el broker daba -1,04%.
+  it('no lo da para instrumentos sin sesion ampliada, aunque sean alemanes', () => {
+    assert.equal(frankfurtIsinFor('IB1T.DE'), undefined)
+    // Pero el ISIN sigue guardado: lo que se excluye es pedir a Frankfurt.
+    assert.equal(ISIN_BY_XTB_SYMBOL['IB1T.DE'], 'XS2940466316')
+  })
+
   it('devuelve undefined cuando no se conoce el simbolo', () => {
     assert.equal(frankfurtIsinFor('LULU.US'), undefined)
     assert.equal(frankfurtIsinFor('DESCONOCIDO.DE'), undefined)

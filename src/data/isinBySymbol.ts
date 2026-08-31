@@ -9,11 +9,17 @@
  * 1,75 puntos; con la de Frankfurt, 0,24.
  *
  * Origen: el resumen anual de operaciones de XTB, que lista nombre, ISIN y
- * ticker juntos. Cada par se verificó comparando el precio que devuelve
- * Frankfurt para ese ISIN con el que da Yahoo para el ticker: los 15 con dato
- * en ambos coincidían dentro del 0,21%, así que ninguna entrada apunta a un
- * instrumento equivocado. Esa verificación importa porque un ISIN mal puesto
- * no da error: devuelve el precio de otro valor sin avisar.
+ * ticker juntos.
+ *
+ * Al añadir una entrada hay que comprobar DOS cosas distintas:
+ *
+ * - Que el ISIN es el del instrumento: se compara el precio que devuelve
+ *   Frankfurt con el que da Yahoo para el ticker. Un ISIN equivocado no da
+ *   error, devuelve el precio de otro valor sin avisar.
+ * - Que el **porcentaje** resultante cuadra con el del broker. Esto es aparte,
+ *   y no vale saltárselo: en IB1T el precio coincidía (6,75 frente a 6,744) y
+ *   aun así el cierre estaba mal, porque ese instrumento no tiene sesión
+ *   ampliada. Comparar solo precios no lo detecta.
  *
  * Solo hacen falta los tickers alemanes (`.DE`): el resto de mercados cotizan
  * en su propia plaza, donde Yahoo ya coincide con el broker. Los símbolos que
@@ -66,21 +72,39 @@ export const ISIN_BY_XTB_SYMBOL: Record<string, string> = {
 }
 
 /**
+ * Instrumentos que el broker NO negocia en sesión ampliada.
+ *
+ * Todo el sentido de preguntar a Frankfurt es recoger la tarde que XETRA se
+ * pierde por cerrar a las 17:30. Un instrumento que tampoco se negocia después
+ * de esa hora no tiene esa tarde: su cierre de referencia es el de XETRA, y el
+ * de Frankfurt —siempre más bajo, porque arrastra el tramo americano— solo
+ * introduce error. IB1T se publicó con +1,11% cuando el broker daba −1,04%.
+ *
+ * Se reconoce en la ficha del instrumento en XTB: los de sesión ampliada
+ * marcan 07:30–22:00; IB1T marca 09:04–17:30.
+ */
+const SIN_SESION_AMPLIADA = new Set(['IB1T.DE'])
+
+/**
  * ISIN a usar para pedir el cierre a Frankfurt, o `undefined` si no procede.
  *
- * Solo vale para los listados alemanes. Frankfurt cotiza **siempre en euros**,
- * mientras que el precio actual lo pone Yahoo en la divisa del mercado de
- * origen: juntar un precio en DKK, GBP o USD con un cierre en EUR da
- * variaciones absurdas. Pasó en producción — Diageo llegó a mostrar
- * +8.451% (17,09 GBP contra su cierre en euros) y Novo Nordisk +636%, que no
- * es más que la cotización de la corona danesa.
+ * Tres condiciones, y las tres nacen de un fallo que llegó a producción:
  *
- * `api/price.ts` repite la comprobación mirando la divisa que devuelve Yahoo.
- * Son dos redes distintas a propósito: esta decide por mercado, aquella por
- * divisa real, y basta con que una acierte para no volver a publicar un
- * porcentaje imposible.
+ * 1. Solo listados alemanes. Frankfurt cotiza **siempre en euros** y el precio
+ *    lo pone Yahoo en la divisa de origen: juntar un precio en DKK, GBP o USD
+ *    con un cierre en EUR da el tipo de cambio disfrazado de variación. Se vio
+ *    Diageo con +8.451% y Novo Nordisk con +636%.
+ * 2. Ni siquiera basta con que ambos sean euros: EGLN cotiza en euros en
+ *    Londres, y mezclarlo con el cierre de Frankfurt daba +1,87% en vez de
+ *    −0,47%. Por eso el filtro es por mercado y no solo por divisa.
+ * 3. Y el instrumento tiene que negociarse en sesión ampliada — ver
+ *    `SIN_SESION_AMPLIADA`.
+ *
+ * `api/price.ts` vuelve a comprobar la divisa por su cuenta. Son dos redes
+ * distintas a propósito y basta con que una acierte.
  */
 export function frankfurtIsinFor(xtbSymbol: string): string | undefined {
   if (!xtbSymbol.endsWith('.DE')) return undefined
+  if (SIN_SESION_AMPLIADA.has(xtbSymbol)) return undefined
   return ISIN_BY_XTB_SYMBOL[xtbSymbol]
 }
