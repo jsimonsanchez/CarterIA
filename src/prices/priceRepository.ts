@@ -1,3 +1,4 @@
+import { ISIN_BY_XTB_SYMBOL } from '../data/isinBySymbol'
 import { db } from '../db/db'
 import type { PriceCacheEntry, SymbolMapping } from '../domain/types'
 
@@ -28,8 +29,14 @@ export async function getPrice(mapping: SymbolMapping): Promise<PriceCacheEntry>
     }
     // Con ISIN, el proxy toma el cierre anterior de Börse Frankfurt, que es la
     // plaza del broker; sin él, se queda con el de Yahoo.
-    if (mapping.isin) {
-      params.set('isin', mapping.isin)
+    //
+    // Se busca aquí en la tabla estática en vez de leerlo del `mapping`: los
+    // mappings se persisten en IndexedDB al importar, así que uno guardado
+    // antes de que existiera esta tabla no tendría el ISIN y la mejora no se
+    // aplicaría hasta reimportar el extracto.
+    const isin = ISIN_BY_XTB_SYMBOL[mapping.xtbSymbol]
+    if (isin) {
+      params.set('isin', isin)
     }
 
     const res = await fetch(`/api/price?${params.toString()}`)

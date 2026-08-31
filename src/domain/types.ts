@@ -71,8 +71,6 @@ export interface SymbolMapping {
   /** Exchange que espera Twelve Data en el parámetro `exchange` (undefined para mercado de EEUU). */
   twelveDataExchange?: string
   yahooSymbol: string
-  /** ISIN del instrumento, cuando se conoce: es como identifica los valores Börse Frankfurt — ver `isinBySymbol.ts`. */
-  isin?: string
   name?: string
   /**
    * URL de la imagen del logo ya resuelta, cacheada para no volver a gastar
