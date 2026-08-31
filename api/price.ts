@@ -101,6 +101,40 @@ async function fetchFrankfurtPreviousClose(isin: string): Promise<number | null>
   }
 }
 
+/** Día natural (AAAA-MM-DD) de un instante, en la zona horaria de la plaza. */
+function diaEnLaPlaza(epochSegundos: number, desfaseSegundos: number): string {
+  return new Date((epochSegundos + desfaseSegundos) * 1000).toISOString().slice(0, 10)
+}
+
+/**
+ * ¿El último precio corresponde a la sesión de HOY en su propia plaza?
+ *
+ * Se compara el día natural y no la hora de apertura. La versión anterior
+ * miraba si el precio era posterior al inicio de la sesión en curso, lo cual
+ * falla en festivo: Yahoo no adelanta `currentTradingPeriod` a un día que no
+ * se negocia, así que el viernes seguía siendo "la sesión en curso" y el
+ * cierre del viernes caía dentro. El lunes del Summer Bank Holiday, con
+ * Londres cerrado, Diageo y iShares Physical Gold aparecían en el panel de
+ * volatilidad con la variación del viernes presentada como la de hoy.
+ *
+ * Comparar el día cubre además el caso para el que se escribió la
+ * comprobación original —el mercado que aún no ha abierto hoy—, porque su
+ * último precio sigue siendo el del día anterior.
+ */
+function sesionDeHoy(
+  regularMarketTime: unknown,
+  gmtOffset: unknown,
+  inicioSesion: unknown,
+): boolean | undefined {
+  if (typeof regularMarketTime !== 'number') return undefined
+  if (typeof gmtOffset === 'number') {
+    return diaEnLaPlaza(regularMarketTime, gmtOffset) === diaEnLaPlaza(Date.now() / 1000, gmtOffset)
+  }
+  // Sin zona horaria no se puede saber el día en la plaza; se recurre a la
+  // comprobación antigua, que al menos detecta el mercado que no ha abierto.
+  return typeof inicioSesion === 'number' ? regularMarketTime >= inicioSesion : undefined
+}
+
 async function fetchYahooFromHost(host: string, symbol: string): Promise<PriceResult | null> {
   const url = `https://${host}/v8/finance/chart/${encodeURIComponent(symbol)}`
   try {
@@ -115,10 +149,11 @@ async function fetchYahooFromHost(host: string, symbol: string): Promise<PriceRe
 
     const regularMarketTime = result?.meta?.regularMarketTime
     const regularSessionStart = result?.meta?.currentTradingPeriod?.regular?.start
-    const isTodaySession =
-      typeof regularMarketTime === 'number' && typeof regularSessionStart === 'number'
-        ? regularMarketTime >= regularSessionStart
-        : undefined
+    const isTodaySession = sesionDeHoy(
+      regularMarketTime,
+      result?.meta?.gmtoffset,
+      regularSessionStart,
+    )
 
     const name = result?.meta?.longName ?? result?.meta?.shortName
 
