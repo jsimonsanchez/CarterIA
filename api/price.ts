@@ -59,34 +59,8 @@ async function fetchTwelveData(symbol: string, exchange: string | null): Promise
 // servidor concreto, no un bloqueo del proveedor entero) se reintenta con el otro.
 const YAHOO_HOSTS = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com']
 
-/**
- * El último elemento de la serie diaria es la barra de hoy (todavía
- * formándose); el cierre anterior es el de la barra justo antes. Si esa
- * barra es null (sin ninguna operación esa sesión — frecuente en ETFs UCITS
- * poco líquidos, p.ej. viernes sin cruzarse ni una orden) NO se sigue
- * retrocediendo a por un cierre más antiguo: comparar el precio de hoy con
- * el de hace dos o más sesiones da un % de variación diaria que no es tal
- * y no coincide con lo que muestra el bróker. Se prefiere no dar variación
- * a dar una equivocada.
- */
-function previousCloseFromSeries(result: unknown): number | undefined {
-  const closes = (result as { indicators?: { quote?: { close?: unknown[] }[] } })?.indicators?.quote?.[0]
-    ?.close
-  if (!Array.isArray(closes) || closes.length < 2) return undefined
-  const prev = closes[closes.length - 2]
-  return typeof prev === 'number' ? prev : undefined
-}
-
 async function fetchYahooFromHost(host: string, symbol: string): Promise<PriceResult | null> {
-  // range=5d&interval=1d: no basta con el precio y "previousClose" del
-  // endpoint por defecto. Ese campo (meta.previousClose / chartPreviousClose)
-  // lo calcula Yahoo sobre el propio rango consultado y no es de fiar: en
-  // valores poco líquidos puede devolver el cierre de varias sesiones atrás
-  // sin que coincida con ningún cierre real de la serie, y hasta con un
-  // valor líquido (comprobado con AAPL) cambia según el rango pedido. Por
-  // eso no se usa en absoluto: el cierre anterior se calcula aquí a partir
-  // de la propia serie de cierres diarios.
-  const url = `https://${host}/v8/finance/chart/${encodeURIComponent(symbol)}?range=5d&interval=1d`
+  const url = `https://${host}/v8/finance/chart/${encodeURIComponent(symbol)}`
   try {
     const res = await fetch(url, { headers: { 'User-Agent': YAHOO_USER_AGENT } })
     if (!res.ok) return null
@@ -94,7 +68,7 @@ async function fetchYahooFromHost(host: string, symbol: string): Promise<PriceRe
     const result = data?.chart?.result?.[0]
     const price = result?.meta?.regularMarketPrice
     const currency = result?.meta?.currency
-    const previousClose = previousCloseFromSeries(result)
+    const previousClose = result?.meta?.previousClose ?? result?.meta?.chartPreviousClose
     if (typeof price !== 'number' || !currency) return null
 
     const regularMarketTime = result?.meta?.regularMarketTime
