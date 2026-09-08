@@ -160,6 +160,45 @@
   flex-shrink: 0;
 }
 
+/* El logo ahora es tambien el disparador de AppVersionPopover: se resetea a
+   "sin pinta de boton" y solo se nota al pasar el raton, para que siga
+   leyendose como el logo de la app y no como un control mas de la barra. */
+.app-logo-btn {
+  display: inline-flex;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  line-height: 0;
+  border-radius: var(--radius-md);
+  transition: transform 0.15s ease;
+}
+
+.app-logo-btn:hover {
+  transform: scale(1.06);
+}
+
+.app-logo-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.version-sha {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--surface-hover);
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+
+.version-popover-link {
+  display: inline-block;
+  margin-top: 4px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .button {
   background: var(--accent);
   color: #ffffff;

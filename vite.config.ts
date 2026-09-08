@@ -1,9 +1,37 @@
+import { execSync } from 'node:child_process'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+/**
+ * Versión que se ve al tocar el logo (ver `AppVersionPopover`). Sale de git
+ * en el momento de compilar, no de un número que haya que acordarse de subir
+ * a mano en cada commit — así coincide siempre con lo que hay realmente
+ * desplegado, sin depender de la disciplina de nadie.
+ *
+ * `commitCount` es un entero que solo sube (número total de commits): sirve
+ * para ver de un vistazo si dos pantallas llevan la misma versión sin tener
+ * que comparar hashes a ojo. El hash corto y la fecha son para localizar el
+ * commit exacto en GitHub cuando hace falta.
+ */
+function readAppVersion() {
+  try {
+    const sha = execSync('git rev-parse HEAD').toString().trim()
+    const commitDate = execSync('git log -1 --format=%cI').toString().trim()
+    const commitCount = Number(execSync('git rev-list --count HEAD').toString().trim())
+    return { sha: sha.slice(0, 7), commitDate, commitCount }
+  } catch {
+    // Sin repo git a mano (p.ej. un build desde un tarball) no se rompe la
+    // build por esto: se degrada a "versión desconocida" en vez de fallar.
+    return { sha: 'dev', commitDate: new Date().toISOString(), commitCount: 0 }
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(readAppVersion()),
+  },
   plugins: [
     react(),
     VitePWA({
