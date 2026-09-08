@@ -859,6 +859,37 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* A diferencia de AllocationChart, este gráfico no vive en la columna
+   estrecha del main-grid: en un panel de ancho completo, tarta arriba y
+   leyenda debajo dejaría un hueco vacío enorme a los lados. Lado a lado
+   aprovecha el ancho; en pantallas estrechas se apila igual que la otra. */
+.category-chart-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.category-chart-pie {
+  flex: 0 0 200px;
+  width: 200px;
+}
+
+.category-chart-legend {
+  flex: 1 1 200px;
+  min-width: 160px;
+  /* Sin la separación de "va debajo de la tarta" que trae .chart-legend por defecto. */
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+@media (max-width: 480px) {
+  .category-chart-pie {
+    flex-basis: 100%;
+  }
+}
+
 .report-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
