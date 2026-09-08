@@ -52,7 +52,7 @@ export function CategoryPerformanceChart({ rows }: { rows: PortfolioRow[] }) {
 
   return (
     <section className="panel">
-      <h2>Acciones vs. ETF y similares</h2>
+      <h2>Cartera por tipo de instrumento</h2>
       <div className="category-chart-row">
         <div className="category-chart-pie">
           <ResponsiveContainer width="100%" height={160}>
