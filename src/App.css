@@ -332,6 +332,32 @@
   outline-color: var(--negative);
 }
 
+/* Mismo contorno que .button-danger, pero neutro: alternar el modo
+   privacidad no es una acción destructiva y no debe leerse como una. El
+   estado "activo" (importes ocultos) sí usa el color de acento, para que se
+   note a simple vista que hay algo oculto en pantalla. */
+.button-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.button-ghost:hover:not(:disabled) {
+  background: var(--surface-hover);
+  filter: none;
+  box-shadow: none;
+}
+
+.button-ghost.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
 @media (max-width: 640px) {
   .import-btn-suffix {
     display: none;

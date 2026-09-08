@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
 import { annualizedReturn } from '../domain/xirr'
+import { usePrivacy } from '../hooks/usePrivacy'
 import { formatDate, formatEur, formatPct } from '../utils/format'
 import { InfoPopover } from './InfoPopover'
 
@@ -15,6 +16,7 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 export function PositionDetail({ symbol, marketValueEur }: { symbol: string; marketValueEur?: number }) {
+  const { hidden } = usePrivacy()
   const transactions = useLiveQuery(
     () => db.transactions.where('symbol').equals(symbol).sortBy('date'),
     [symbol],
@@ -65,8 +67,8 @@ export function PositionDetail({ symbol, marketValueEur }: { symbol: string; mar
               <td>{formatDate(tx.date)}</td>
               <td>{TYPE_LABELS[tx.type] ?? tx.type}</td>
               <td className="num">{tx.quantity > 0 ? tx.quantity.toLocaleString('es-ES', { maximumFractionDigits: 4 }) : '—'}</td>
-              <td className="num">{tx.price > 0 ? formatEur(tx.price) : '—'}</td>
-              <td className={`num ${tx.total >= 0 ? 'positive' : 'negative'}`}>{formatEur(tx.total)}</td>
+              <td className="num">{tx.price > 0 ? formatEur(tx.price, hidden) : '—'}</td>
+              <td className={`num ${tx.total >= 0 ? 'positive' : 'negative'}`}>{formatEur(tx.total, hidden)}</td>
             </tr>
           ))}
         </tbody>

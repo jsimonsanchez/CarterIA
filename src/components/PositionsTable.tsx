@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { isPriceStale } from '../domain/priceFreshness'
 import { useLogos } from '../hooks/useLogos'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
+import { usePrivacy } from '../hooks/usePrivacy'
 import { formatEur, formatNativePrice, formatPct, priceDecimalsFor } from '../utils/format'
 import { InfoPopover } from './InfoPopover'
 import { PositionDetail } from './PositionDetail'
@@ -175,6 +176,7 @@ function PositionRow({
   expanded: boolean
   onToggle: () => void
 }) {
+  const { hidden } = usePrivacy()
   const tone = (row.unrealizedPnlEur ?? 0) >= 0 ? 'positive' : 'negative'
   const isStale = isPriceStale(row.priceFetchedAt)
 
@@ -195,7 +197,7 @@ function PositionRow({
           </div>
         </td>
         <td className="num">{row.quantity.toLocaleString('es-ES', { maximumFractionDigits: 4 })}</td>
-        <td className="num">{formatEur(row.averageCost)}</td>
+        <td className="num">{formatEur(row.averageCost, hidden)}</td>
         <td className="num">
           {row.priceError ? (
             <span className="error-text" title={row.priceError}>
@@ -223,8 +225,10 @@ function PositionRow({
             <span className="card-hint">{isLoading ? '…' : 'sin precio'}</span>
           )}
         </td>
-        <td className="num">{row.marketValueEur !== undefined ? formatEur(row.marketValueEur) : '—'}</td>
-        <td className={`num ${tone}`}>{row.unrealizedPnlEur !== undefined ? formatEur(row.unrealizedPnlEur) : '—'}</td>
+        <td className="num">{row.marketValueEur !== undefined ? formatEur(row.marketValueEur, hidden) : '—'}</td>
+        <td className={`num ${tone}`}>
+          {row.unrealizedPnlEur !== undefined ? formatEur(row.unrealizedPnlEur, hidden) : '—'}
+        </td>
         <td className={`num ${tone}`}>{row.unrealizedPnlPct !== undefined ? formatPct(row.unrealizedPnlPct) : '—'}</td>
       </tr>
       {expanded && (

@@ -6,6 +6,7 @@ import { isPriceStale } from '../domain/priceFreshness'
 import { modifiedDietzAnnualized, xirr } from '../domain/xirr'
 import type { ClosedTrade, Transaction } from '../domain/types'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
+import { usePrivacy } from '../hooks/usePrivacy'
 import { formatEur, formatPct } from '../utils/format'
 import { InfoPopover } from './InfoPopover'
 
@@ -17,6 +18,7 @@ const NO_TRADES: ClosedTrade[] = []
 const NO_TRANSACTIONS: Transaction[] = []
 
 export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
+  const { hidden } = usePrivacy()
   const closedTrades = useLiveQuery(() => db.closedTrades.toArray(), []) ?? NO_TRADES
   const transactions = useLiveQuery(() => db.transactions.toArray(), []) ?? NO_TRANSACTIONS
 
@@ -100,51 +102,51 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
         <div className="summary-stat">
           <span className="card-label">Valor Total</span>
           <div className="summary-stat-body">
-            <span className="card-value">{formatEur(portfolioValue)}</span>
-            <span className="card-sub">Posiciones {formatEur(marketValue)}</span>
-            <span className="card-sub">Liquidez {formatEur(cashBalance)}</span>
+            <span className="card-value">{formatEur(portfolioValue, hidden)}</span>
+            <span className="card-sub">Posiciones {formatEur(marketValue, hidden)}</span>
+            <span className="card-sub">Liquidez {formatEur(cashBalance, hidden)}</span>
             {priceHint && <span className="card-hint">{priceHint}</span>}
           </div>
         </div>
         <Stat
           label="Coste de la cartera"
-          value={formatEur(costBasis)}
+          value={formatEur(costBasis, hidden)}
           sub={`Posiciones abiertas ${rows.length}`}
         />
         <Stat
           label="Plusvalía Latente"
-          value={formatEur(unrealizedPnl)}
+          value={formatEur(unrealizedPnl, hidden)}
           sub={unrealizedPct !== undefined ? formatPct(unrealizedPct) : undefined}
           tone={unrealizedPnl >= 0 ? 'positive' : 'negative'}
           title={
             `Lo que aún no has vendido: ${plural(withPrice.length, 'posición', 'posiciones')}, ` +
-            `de ${formatEur(pricedCostBasis)} de coste a ${formatEur(marketValue)} de valor actual.` +
+            `de ${formatEur(pricedCostBasis, hidden)} de coste a ${formatEur(marketValue, hidden)} de valor actual.` +
             (missingPrices > 0
               ? ` Queda fuera ${plural(missingPrices, 'posición', 'posiciones')} sin precio` +
-                ` (${formatEur(costBasis - pricedCostBasis)} de coste).`
+                ` (${formatEur(costBasis - pricedCostBasis, hidden)} de coste).`
               : '')
           }
         />
         <Stat
           label="Plusvalía"
-          value={formatEur(realizedPnl)}
+          value={formatEur(realizedPnl, hidden)}
           sub={realizedPct !== undefined ? formatPct(realizedPct) : undefined}
           tone={realizedPnl >= 0 ? 'positive' : 'negative'}
           title={
             `Lo que ya has vendido: ${plural(closedTrades.length, 'operación cerrada', 'operaciones cerradas')}, ` +
-            `de ${formatEur(realizedCostBasis)} de coste a ${formatEur(realizedCostBasis + realizedPnl)} de venta.`
+            `de ${formatEur(realizedCostBasis, hidden)} de coste a ${formatEur(realizedCostBasis + realizedPnl, hidden)} de venta.`
           }
         />
         <Stat
           label="Total"
-          value={formatEur(total)}
+          value={formatEur(total, hidden)}
           sub={totalPct !== undefined ? formatPct(totalPct) : undefined}
           tone={total >= 0 ? 'positive' : 'negative'}
           // Lo que la etiqueta ya no dice (que incluye dividendos e
           // intereses) pasa a la explicación, para no ocupar dos líneas.
           title={
             `Rendimiento de todo lo aportado, con dividendos e intereses incluidos: ` +
-            `${formatEur(portfolioValue)} de valor actual frente a ${formatEur(totalDeposits)} de ingresos de efectivo.`
+            `${formatEur(portfolioValue, hidden)} de valor actual frente a ${formatEur(totalDeposits, hidden)} de ingresos de efectivo.`
           }
         />
         {xirrPct !== undefined && (

@@ -5,6 +5,7 @@ import { annualizedReturnOfTrades } from '../domain/performance'
 import type { ClosedTrade } from '../domain/types'
 import { cagr, MIN_DAYS_TO_ANNUALIZE } from '../domain/xirr'
 import { useLogos } from '../hooks/useLogos'
+import { usePrivacy } from '../hooks/usePrivacy'
 import { formatDate, formatEur, formatPct } from '../utils/format'
 import { SymbolLogo } from './SymbolLogo'
 
@@ -14,6 +15,7 @@ const NO_SYMBOLS: string[] = []
 type Logos = Record<string, string | null>
 
 export function RealizedGainsPanel() {
+  const { hidden } = usePrivacy()
   const trades = useLiveQuery(() => db.closedTrades.toArray(), [])
   const [openYear, setOpenYear] = useState<number | null>(null)
   // Clave "año|símbolo": el mismo valor puede haberse cerrado en varios
@@ -36,7 +38,9 @@ export function RealizedGainsPanel() {
     <section className="panel">
       <div className="panel-header">
         <h2>Plusvalías realizadas por año</h2>
-        <span className={`card-value ${totalRealized >= 0 ? 'positive' : 'negative'}`}>{formatEur(totalRealized)}</span>
+        <span className={`card-value ${totalRealized >= 0 ? 'positive' : 'negative'}`}>
+          {formatEur(totalRealized, hidden)}
+        </span>
       </div>
 
       <div className="scroll-thin" style={{ overflowX: 'auto' }}>
@@ -62,7 +66,9 @@ export function RealizedGainsPanel() {
                       <strong>{year}</strong>
                     </td>
                     <td className="num">{yearTrades.length}</td>
-                    <td className={`num ${totals.pnl >= 0 ? 'positive' : 'negative'}`}>{formatEur(totals.pnl)}</td>
+                    <td className={`num ${totals.pnl >= 0 ? 'positive' : 'negative'}`}>
+                      {formatEur(totals.pnl, hidden)}
+                    </td>
                     <td className={`num ${totals.pnl >= 0 ? 'positive' : 'negative'}`}>
                       {totals.pct !== undefined ? formatPct(totals.pct) : '—'}
                     </td>
@@ -106,6 +112,7 @@ function SymbolBreakdown({
   openSymbol: string | null
   onToggleSymbol: (key: string | null) => void
 }) {
+  const { hidden } = usePrivacy()
   const bySymbol = groupBy(trades, (t) => t.symbol)
   // De mayor a menor aportación: lo primero que se quiere ver es qué valor
   // explica el resultado del año.
@@ -145,9 +152,9 @@ function SymbolBreakdown({
                   </span>
                 </td>
                 <td className="num">{symbolTrades.length}</td>
-                <td className="num">{formatEur(totals.cost)}</td>
-                <td className="num">{formatEur(totals.sale)}</td>
-                <td className={`num ${tone}`}>{formatEur(totals.pnl)}</td>
+                <td className="num">{formatEur(totals.cost, hidden)}</td>
+                <td className="num">{formatEur(totals.sale, hidden)}</td>
+                <td className={`num ${tone}`}>{formatEur(totals.pnl, hidden)}</td>
                 <td className={`num ${tone}`}>{totals.pct !== undefined ? formatPct(totals.pct) : '—'}</td>
                 <td
                   className={`num ${annualizedPct !== undefined ? (annualizedPct >= 0 ? 'positive' : 'negative') : ''}`}
@@ -179,6 +186,7 @@ function SymbolBreakdown({
 
 /** Las operaciones concretas de un valor. */
 function TradeList({ trades }: { trades: ClosedTrade[] }) {
+  const { hidden } = usePrivacy()
   return (
     <table className="transactions-table">
       <thead>
@@ -204,9 +212,9 @@ function TradeList({ trades }: { trades: ClosedTrade[] }) {
             <tr key={t.id}>
               <td>{formatDate(t.closeDate)}</td>
               <td className="num">{t.quantity.toLocaleString('es-ES', { maximumFractionDigits: 4 })}</td>
-              <td className="num">{formatEur(t.purchaseValueEur)}</td>
-              <td className="num">{formatEur(t.saleValueEur)}</td>
-              <td className={`num ${tone}`}>{formatEur(t.realizedPnlEur)}</td>
+              <td className="num">{formatEur(t.purchaseValueEur, hidden)}</td>
+              <td className="num">{formatEur(t.saleValueEur, hidden)}</td>
+              <td className={`num ${tone}`}>{formatEur(t.realizedPnlEur, hidden)}</td>
               <td className={`num ${tone}`}>{pct !== undefined ? formatPct(pct) : '—'}</td>
               <td
                 className={`num ${annualizedPct !== undefined ? tone : ''}`}

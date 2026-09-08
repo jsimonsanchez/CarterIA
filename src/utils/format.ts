@@ -1,4 +1,15 @@
-export function formatEur(value: number): string {
+/** Sustituye un importe en modo privacidad — ver `usePrivacy`. Ancho fijo, para no descuadrar columnas. */
+const HIDDEN_AMOUNT = '••••• €'
+
+/**
+ * `hidden` en `true` devuelve un marcador en vez del importe real, para el
+ * modo privacidad (ver `usePrivacy`). Se hace aquí y no envolviendo el
+ * resultado en el llamador porque varios sitios interpolan el importe dentro
+ * de una frase más larga (p. ej. el texto de un `title`): así ese texto
+ * también queda oculto sin tener que enmascararlo aparte.
+ */
+export function formatEur(value: number, hidden = false): string {
+  if (hidden) return HIDDEN_AMOUNT
   return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(value)
 }
 

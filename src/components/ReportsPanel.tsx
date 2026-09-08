@@ -1,9 +1,11 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
 import { isTaxFee } from '../domain/fees'
+import { usePrivacy } from '../hooks/usePrivacy'
 import { formatEur } from '../utils/format'
 
 export function ReportsPanel() {
+  const { hidden } = usePrivacy()
   const transactions = useLiveQuery(() => db.transactions.toArray(), [])
 
   if (!transactions) return null
@@ -22,23 +24,23 @@ export function ReportsPanel() {
       <dl className="report-list">
         <div>
           <dt>Dividendos cobrados</dt>
-          <dd className="positive">{formatEur(dividends)}</dd>
+          <dd className="positive">{formatEur(dividends, hidden)}</dd>
         </div>
         <div>
           <dt>Comisiones</dt>
-          <dd className="negative">{formatEur(commissions)}</dd>
+          <dd className="negative">{formatEur(commissions, hidden)}</dd>
         </div>
         <div>
           <dt>Impuestos</dt>
-          <dd className="negative">{formatEur(taxes)}</dd>
+          <dd className="negative">{formatEur(taxes, hidden)}</dd>
         </div>
         <div>
           <dt>Intereses de efectivo</dt>
-          <dd className="positive">{formatEur(interest)}</dd>
+          <dd className="positive">{formatEur(interest, hidden)}</dd>
         </div>
         <div>
           <dt>Ingresos de efectivo</dt>
-          <dd>{formatEur(deposits)}</dd>
+          <dd>{formatEur(deposits, hidden)}</dd>
         </div>
       </dl>
     </section>

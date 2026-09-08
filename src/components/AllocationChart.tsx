@@ -1,11 +1,13 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
+import { usePrivacy } from '../hooks/usePrivacy'
 import { formatEur } from '../utils/format'
 
 const COLORS = ['#38bdf8', '#a78bfa', '#f472b6', '#fb923c', '#facc15', '#4ade80', '#2dd4bf', '#818cf8', '#fb7185', '#c084fc']
 const LEGEND_LIMIT = 8
 
 export function AllocationChart({ rows }: { rows: PortfolioRow[] }) {
+  const { hidden } = usePrivacy()
   const data = rows
     .filter((r) => (r.marketValueEur ?? 0) > 0)
     .map((r) => ({ name: r.symbol, value: r.marketValueEur ?? 0 }))
@@ -42,7 +44,7 @@ export function AllocationChart({ rows }: { rows: PortfolioRow[] }) {
             formatter={(value, name) => {
               const numericValue = Number(value)
               const pct = total > 0 ? (numericValue / total) * 100 : 0
-              return [`${formatEur(numericValue)} (${pct.toFixed(1)}%)`, name]
+              return [`${formatEur(numericValue, hidden)} (${pct.toFixed(1)}%)`, name]
             }}
             contentStyle={{ background: '#1e293b', border: '1px solid #2c3a52', borderRadius: 10, color: '#e7ebf3' }}
           />

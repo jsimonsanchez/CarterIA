@@ -8,6 +8,7 @@ import { RealizedGainsPanel } from './components/RealizedGainsPanel'
 import { ReportsPanel } from './components/ReportsPanel'
 import { SummaryCards } from './components/SummaryCards'
 import { refreshPrices, usePortfolioRows } from './hooks/usePortfolioRows'
+import { PrivacyProvider, usePrivacy } from './hooks/usePrivacy'
 
 // recharts es pesado (~400 kB) y solo hace falta cuando hay datos que graficar.
 const AllocationChart = lazy(() => import('./components/AllocationChart').then((m) => ({ default: m.AllocationChart })))
@@ -55,81 +56,131 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>
-          <svg className="app-logo" width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true">
-            <defs>
-              <linearGradient id="app-logo-gradient" x1="2" y1="24" x2="28" y2="6" gradientUnits="userSpaceOnUse">
-                <stop stopColor="var(--accent)" />
-                <stop offset="1" stopColor="var(--positive)" />
-              </linearGradient>
-            </defs>
-            <rect x="3" y="16" width="6" height="11" rx="2" fill="url(#app-logo-gradient)" />
-            <rect x="12" y="9" width="6" height="18" rx="2" fill="url(#app-logo-gradient)" />
-            <rect x="21" y="2" width="6" height="25" rx="2" fill="url(#app-logo-gradient)" />
-          </svg>
-          Cartera Tracker
-        </h1>
-      </header>
-
-      <nav className="tabs">
-        <div className="tabs-left">
-          <button className={`tab ${tab === 'cartera' ? 'active' : ''}`} onClick={() => setTab('cartera')}>
-            Cartera
-          </button>
-          <button className={`tab ${tab === 'realizado' ? 'active' : ''}`} onClick={() => setTab('realizado')}>
-            Posiciones cerradas
-          </button>
-        </div>
-        <div className="tabs-right">
-          <ImportButton state={importState} />
-          <button
-            className="button button-sm button-danger"
-            onClick={handleClearAll}
-            // En móvil solo queda el icono, así que el nombre de la acción
-            // tiene que llegar igual a quien navegue con lector de pantalla.
-            aria-label="Borrar todo"
-            title="Borrar todo"
-          >
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path
-                d="M2.5 4h11M6.5 4V2.5h3V4M4 4l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L12 4"
-                stroke="currentColor"
-                strokeWidth="1.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+    <PrivacyProvider>
+      <div className="app">
+        <header className="app-header">
+          <h1>
+            <svg className="app-logo" width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="app-logo-gradient" x1="2" y1="24" x2="28" y2="6" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="var(--accent)" />
+                  <stop offset="1" stopColor="var(--positive)" />
+                </linearGradient>
+              </defs>
+              <rect x="3" y="16" width="6" height="11" rx="2" fill="url(#app-logo-gradient)" />
+              <rect x="12" y="9" width="6" height="18" rx="2" fill="url(#app-logo-gradient)" />
+              <rect x="21" y="2" width="6" height="25" rx="2" fill="url(#app-logo-gradient)" />
             </svg>
-            <span className="clear-btn-label">Borrar todo</span>
-          </button>
-        </div>
-      </nav>
+            Cartera Tracker
+          </h1>
+        </header>
 
-      <ImportFeedback state={importState} />
-
-      {tab === 'cartera' ? (
-        <>
-          <SummaryCards rows={rows} />
-          <DayMoversPanel rows={rows} />
-          <div className="main-grid">
-            <PositionsTable
-              rows={rows}
-              isLoading={isLoading}
-              onRefresh={handleRefresh}
-              refreshing={refreshing}
-              refreshError={refreshError}
-            />
-            <Suspense fallback={null}>
-              <AllocationChart rows={rows} />
-            </Suspense>
+        <nav className="tabs">
+          <div className="tabs-left">
+            <button className={`tab ${tab === 'cartera' ? 'active' : ''}`} onClick={() => setTab('cartera')}>
+              Cartera
+            </button>
+            <button className={`tab ${tab === 'realizado' ? 'active' : ''}`} onClick={() => setTab('realizado')}>
+              Posiciones cerradas
+            </button>
           </div>
-          <ReportsPanel />
-        </>
+          <div className="tabs-right">
+            <PrivacyToggleButton />
+            <ImportButton state={importState} />
+            <button
+              className="button button-sm button-danger"
+              onClick={handleClearAll}
+              // En móvil solo queda el icono, así que el nombre de la acción
+              // tiene que llegar igual a quien navegue con lector de pantalla.
+              aria-label="Borrar todo"
+              title="Borrar todo"
+            >
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path
+                  d="M2.5 4h11M6.5 4V2.5h3V4M4 4l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L12 4"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span className="clear-btn-label">Borrar todo</span>
+            </button>
+          </div>
+        </nav>
+
+        <ImportFeedback state={importState} />
+
+        {tab === 'cartera' ? (
+          <>
+            <SummaryCards rows={rows} />
+            <DayMoversPanel rows={rows} />
+            <div className="main-grid">
+              <PositionsTable
+                rows={rows}
+                isLoading={isLoading}
+                onRefresh={handleRefresh}
+                refreshing={refreshing}
+                refreshError={refreshError}
+              />
+              <Suspense fallback={null}>
+                <AllocationChart rows={rows} />
+              </Suspense>
+            </div>
+            <ReportsPanel />
+          </>
+        ) : (
+          <RealizedGainsPanel />
+        )}
+      </div>
+    </PrivacyProvider>
+  )
+}
+
+/**
+ * Oculta/muestra los importes en € de toda la app (los % de rentabilidad y
+ * la composición de la cartera siguen visibles): para poder enseñar la
+ * pantalla sin revelar cuánto dinero hay detrás. Botón aparte, en vez de
+ * usePrivacy() en App, porque el contexto solo existe dentro de
+ * PrivacyProvider, que envuelve al propio App.
+ */
+function PrivacyToggleButton() {
+  const { hidden, toggle } = usePrivacy()
+  const label = hidden ? 'Mostrar importes' : 'Ocultar importes'
+
+  return (
+    <button
+      className={`button button-sm button-ghost ${hidden ? 'active' : ''}`}
+      onClick={toggle}
+      aria-pressed={hidden}
+      // Mismo motivo que en "Borrar todo": en móvil solo queda el icono.
+      aria-label={label}
+      title={label}
+    >
+      {hidden ? (
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path
+            d="M1.5 8S4 3.2 8 3.2 14.5 8 14.5 8 12 12.8 8 12.8 1.5 8 1.5 8Z"
+            stroke="currentColor"
+            strokeWidth="1.3"
+            strokeLinejoin="round"
+          />
+          <circle cx="8" cy="8" r="2.1" stroke="currentColor" strokeWidth="1.3" />
+          <path d="M2 2l12 12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+        </svg>
       ) : (
-        <RealizedGainsPanel />
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path
+            d="M1.5 8S4 3.2 8 3.2 14.5 8 14.5 8 12 12.8 8 12.8 1.5 8 1.5 8Z"
+            stroke="currentColor"
+            strokeWidth="1.3"
+            strokeLinejoin="round"
+          />
+          <circle cx="8" cy="8" r="2.1" stroke="currentColor" strokeWidth="1.3" />
+        </svg>
       )}
-    </div>
+      <span className="clear-btn-label">{label}</span>
+    </button>
   )
 }
 

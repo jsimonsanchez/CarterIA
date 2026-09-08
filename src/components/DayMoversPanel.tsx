@@ -1,11 +1,13 @@
 import { useLogos } from '../hooks/useLogos'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
+import { usePrivacy } from '../hooks/usePrivacy'
 import { formatEur, formatNativePrice } from '../utils/format'
 import { SymbolLogo } from './SymbolLogo'
 
 const MAX_MOVERS = 6
 
 export function DayMoversPanel({ rows }: { rows: PortfolioRow[] }) {
+  const { hidden } = usePrivacy()
   const movers = rows
     .filter((r) => r.dayChangePct !== undefined)
     .sort((a, b) => Math.abs(b.dayChangePct!) - Math.abs(a.dayChangePct!))
@@ -37,7 +39,7 @@ export function DayMoversPanel({ rows }: { rows: PortfolioRow[] }) {
           <span className={`movers-total ${totalUp ? 'positive' : 'negative'}`}>
             {totalUp ? '📈' : '📉'} {totalUp ? '+' : ''}
             {totalDayChangePct.toFixed(2)}% ({totalDayChangeEur >= 0 ? '+' : ''}
-            {formatEur(totalDayChangeEur)})
+            {formatEur(totalDayChangeEur, hidden)})
           </span>
         )}
       </div>
@@ -67,7 +69,7 @@ export function DayMoversPanel({ rows }: { rows: PortfolioRow[] }) {
                 {row.dayChangeEur !== undefined && (
                   <span className="mover-eur">
                     {row.dayChangeEur >= 0 ? '+' : ''}
-                    {formatEur(row.dayChangeEur)}
+                    {formatEur(row.dayChangeEur, hidden)}
                   </span>
                 )}
               </div>
