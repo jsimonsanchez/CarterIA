@@ -2,5 +2,6 @@
 declare const __APP_VERSION__: {
   sha: string
   commitDate: string // ISO 8601
-  commitCount: number
+  /** AAMMDD.HHmm derivado de commitDate, p.ej. "260908.1751" — ver `buildNumberFrom` en vite.config.ts. */
+  build: string
 }

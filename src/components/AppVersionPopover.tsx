@@ -8,9 +8,9 @@ import { useEffect, useId, useRef, useState } from 'react'
  * nada.
  *
  * `__APP_VERSION__` sale de git al compilar — ver `readAppVersion` en
- * vite.config.ts. `commitCount` es lo único que hace falta leer para saber
- * si dos pantallas llevan la misma versión; el hash y la fecha son para
- * localizar el commit exacto si hace falta.
+ * vite.config.ts. `build` es lo único que hace falta leer para saber si dos
+ * pantallas llevan la misma versión; el hash es para localizar el commit
+ * exacto en GitHub si hace falta.
  */
 export function AppVersionPopover() {
   const id = `version-${useId().replace(/[^a-zA-Z0-9]/g, '')}`
@@ -52,7 +52,7 @@ export function AppVersionPopover() {
         ref={buttonRef}
         type="button"
         className="app-logo-btn"
-        aria-label={`Versión de la app: v${__APP_VERSION__.commitCount}`}
+        aria-label={`Versión de la app: v${__APP_VERSION__.build}`}
         aria-expanded={open}
         onClick={() => popoverRef.current?.togglePopover()}
       >
@@ -89,7 +89,7 @@ export function AppVersionPopover() {
           </button>
         </div>
         <span>
-          v{__APP_VERSION__.commitCount} · <code className="version-sha">{__APP_VERSION__.sha}</code>
+          v{__APP_VERSION__.build} · <code className="version-sha">{__APP_VERSION__.sha}</code>
           {commitDateLabel && (
             <>
               <br />
