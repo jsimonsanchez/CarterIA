@@ -7,6 +7,8 @@ import { getPrices } from '../prices/priceRepository'
 export interface PortfolioRow {
   symbol: string
   name?: string
+  /** Columna "Category" del extracto de XTB (p.ej. "STOCK", "ETF") — ver `categoryLabel`. */
+  category?: string
   quantity: number
   averageCost: number // EUR/acción
   costBasis: number // EUR
@@ -56,6 +58,7 @@ export function usePortfolioRows(): { rows: PortfolioRow[]; isLoading: boolean }
     const baseRow = (pos: (typeof positions)[number]): PortfolioRow => ({
       symbol: pos.symbol,
       name: mappingBySymbol.get(pos.symbol)?.name,
+      category: pos.category,
       quantity: pos.quantity,
       averageCost: pos.averageCost,
       costBasis: pos.quantity * pos.averageCost,

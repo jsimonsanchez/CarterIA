@@ -12,6 +12,9 @@ import { PrivacyProvider, usePrivacy } from './hooks/usePrivacy'
 
 // recharts es pesado (~400 kB) y solo hace falta cuando hay datos que graficar.
 const AllocationChart = lazy(() => import('./components/AllocationChart').then((m) => ({ default: m.AllocationChart })))
+const CategoryPerformanceChart = lazy(() =>
+  import('./components/CategoryPerformanceChart').then((m) => ({ default: m.CategoryPerformanceChart })),
+)
 
 type Tab = 'cartera' | 'realizado'
 
@@ -127,6 +130,9 @@ function App() {
                 <AllocationChart rows={rows} />
               </Suspense>
             </div>
+            <Suspense fallback={null}>
+              <CategoryPerformanceChart rows={rows} />
+            </Suspense>
             <ReportsPanel />
           </>
         ) : (

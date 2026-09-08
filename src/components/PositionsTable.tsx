@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { categoryLabel } from '../domain/instrumentCategory'
 import { isPriceStale } from '../domain/priceFreshness'
 import { useLogos } from '../hooks/useLogos'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
@@ -188,6 +189,10 @@ function PositionRow({
             <span className="symbol-ticker">
               <strong>{row.symbol}</strong>
               {logo && <SymbolLogo url={logo} size={16} className="symbol-logo" />}
+              {/* Sin categoría cuando la posición se importó antes de esta
+                  versión: se omite en vez de anunciar "Sin categoría" en
+                  cada fila, hasta que se reimporte el extracto. */}
+              {row.category && <span className="category-badge">{categoryLabel(row.category)}</span>}
             </span>
             {row.name && (
               <span className="symbol-name" title={row.name}>

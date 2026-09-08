@@ -16,6 +16,8 @@ export interface Transaction {
   rawSymbol: string
   /** Texto original de la línea, para depuración y auditoría de la importación. */
   rawDescription: string
+  /** Columna "Category" del extracto de XTB (p.ej. "STOCK", "ETF"), tal cual — ver `categoryLabel`. */
+  category?: string
 }
 
 /** Posición agregada por símbolo, recalculada a partir de las transacciones. */
@@ -25,6 +27,8 @@ export interface Position {
   averageCost: number
   currency: string
   lastUpdated: string // ISO 8601
+  /** La de la transacción más reciente que la trajera — ver `Transaction.category`. */
+  category?: string
 }
 
 export type PriceSource = 'twelvedata' | 'yahoo' | 'cache'

@@ -22,6 +22,12 @@ export function computePositions(transactions: Transaction[]): Position[] {
     let quantity = 0
     let totalCost = 0
     let currency = txs[0]?.currency ?? ''
+    // La categoría es del instrumento, no de la operación — se queda con la
+    // última que traiga alguna fila, aunque sea un dividendo o una comisión.
+    let category: string | undefined
+    for (const tx of txs) {
+      if (tx.category) category = tx.category
+    }
 
     for (const tx of txs) {
       if (tx.type === 'buy') {
@@ -43,6 +49,7 @@ export function computePositions(transactions: Transaction[]): Position[] {
         averageCost: totalCost / quantity,
         currency,
         lastUpdated: now,
+        category,
       })
     }
   }

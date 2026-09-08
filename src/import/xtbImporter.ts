@@ -70,6 +70,7 @@ export async function parseXtbWorkbook(buffer: ArrayBuffer): Promise<XtbImportRe
   const idxType = colIndex('Type')
   const idxInstrument = colIndex('Instrument')
   const idxTicker = colIndex('Ticker')
+  const idxCategory = colIndex('Category')
   const idxTime = colIndex('Time')
   const idxAmount = colIndex('Amount')
   const idxId = colIndex('ID')
@@ -105,6 +106,10 @@ export async function parseXtbWorkbook(buffer: ArrayBuffer): Promise<XtbImportRe
       const ticker = idxTicker > 0 ? String(row.getCell(idxTicker).value ?? '').trim() : ''
       const instrument = idxInstrument > 0 ? String(row.getCell(idxInstrument).value ?? '').trim() : ''
       const comment = idxComment > 0 ? String(row.getCell(idxComment).value ?? '').trim() : ''
+      // "STOCK" | "ETF" | "ETC" | "ETN" verificados contra un extracto
+      // real; se guarda el valor bruto tal cual y se traduce al mostrarlo —
+      // ver `categoryLabel` en `instrumentCategory.ts`.
+      const category = idxCategory > 0 ? String(row.getCell(idxCategory).value ?? '').trim() || undefined : undefined
 
       const type = TYPE_MAP[rawType] ?? 'other'
       if (type === 'other') {
@@ -136,6 +141,7 @@ export async function parseXtbWorkbook(buffer: ArrayBuffer): Promise<XtbImportRe
         total: amount,
         rawSymbol: ticker,
         rawDescription: `${rawType}${instrument ? ' — ' + instrument : ''}${comment ? ' — ' + comment : ''}`,
+        category,
       })
     } catch (err) {
       // Una fila con un formato inesperado (p.ej. otra variante de fila de

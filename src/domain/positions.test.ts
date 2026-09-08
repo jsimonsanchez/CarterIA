@@ -71,6 +71,21 @@ describe('computePositions', () => {
     assert.equal(positions[0].averageCost, 100)
   })
 
+  it('se queda con la ultima categoria vista, aunque venga de un dividendo', () => {
+    const positions = computePositions([
+      tx({ id: '1', date: '2024-01-01', type: 'buy', symbol: 'SPYL.DE', quantity: 10, price: 12, category: 'ETF' }),
+      tx({ id: '2', date: '2024-06-01', type: 'dividend', symbol: 'SPYL.DE', total: 5, category: 'ETF' }),
+    ])
+
+    assert.equal(positions[0].category, 'ETF')
+  })
+
+  it('deja la categoria sin definir si ninguna transaccion la trae', () => {
+    const positions = computePositions([tx({ id: '1', date: '2024-01-01', type: 'buy', symbol: 'AAPL.US', quantity: 10, price: 100 })])
+
+    assert.equal(positions[0].category, undefined)
+  })
+
   it('agrupa por símbolo de forma independiente', () => {
     const positions = computePositions([
       tx({ id: '1', date: '2024-01-01', type: 'buy', symbol: 'AAPL.US', quantity: 10, price: 100 }),
