@@ -117,13 +117,15 @@ function App() {
                 refreshing={refreshing}
                 refreshError={refreshError}
               />
-              <Suspense fallback={null}>
-                <AllocationChart rows={rows} />
-              </Suspense>
+              <div className="sidebar-charts">
+                <Suspense fallback={null}>
+                  <AllocationChart rows={rows} />
+                </Suspense>
+                <Suspense fallback={null}>
+                  <CategoryPerformanceChart rows={rows} />
+                </Suspense>
+              </div>
             </div>
-            <Suspense fallback={null}>
-              <CategoryPerformanceChart rows={rows} />
-            </Suspense>
             <ReportsPanel />
           </>
         ) : (

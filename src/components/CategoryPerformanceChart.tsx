@@ -25,8 +25,7 @@ interface CategoryStat {
 
 /**
  * Compara acciones, ETF, demás categorías del extracto de XTB y la liquidez:
- * la tarta es el peso de cada una en la cartera (igual que AllocationChart,
- * pero agrupando por categoría en vez de por símbolo); la rentabilidad no
+ * la tarta es el peso de cada una en la cartera; la rentabilidad no
  * realizada de cada una solo se ve al pasar el ratón, en el tooltip — no
  * tiene una escala común con el peso (una categoría con +150% de plusvalía
  * no tiene por qué pesar lo mismo en la cartera) y meterla en el mismo
@@ -34,6 +33,11 @@ interface CategoryStat {
  *
  * La liquidez no tiene coste de adquisición, así que no hay plusvalía que
  * calcularle — su tooltip se queda solo con el peso.
+ *
+ * Va justo debajo de AllocationChart, en la misma columna estrecha del
+ * main-grid (ver `.sidebar-charts` en App.css) — mismo `.chart-container` y
+ * `.chart-legend` que esa gráfica, para que las dos lean como una sola
+ * franja lateral y no como dos paneles descoordinados.
  */
 export function CategoryPerformanceChart({ rows }: { rows: PortfolioRow[] }) {
   const transactions = useLiveQuery(() => db.transactions.toArray(), []) ?? NO_TRANSACTIONS
@@ -75,57 +79,53 @@ export function CategoryPerformanceChart({ rows }: { rows: PortfolioRow[] }) {
   data.sort((a, b) => b.pctCartera - a.pctCartera)
 
   return (
-    <section className="panel">
-      <h2>Tipo de instrumento</h2>
-      <div className="category-chart-row">
-        <div className="category-chart-pie">
-          <ResponsiveContainer width="100%" height={160}>
-            <PieChart>
-              <Pie
-                data={data}
-                dataKey="pctCartera"
-                nameKey="category"
-                innerRadius={40}
-                outerRadius={70}
-                paddingAngle={1}
-                isAnimationActive={false}
-              >
-                {data.map((entry, i) => (
-                  <Cell key={entry.category} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(value, name, item) => {
-                  const rendimiento = (item.payload as CategoryStat)?.pctRendimiento
-                  const pctText = `${Number(value).toFixed(1)}% de la cartera`
-                  // La liquidez (y cualquier categoría sin coste de
-                  // adquisición) no tiene plusvalía que mostrar — se omite
-                  // la coletilla en vez de decir "sin datos", que suena a
-                  // fallo cuando en realidad es que no aplica.
-                  const text = rendimiento !== undefined ? `${pctText} · ${formatPct(rendimiento)} de rendimiento` : pctText
-                  return [text, name]
-                }}
-                contentStyle={{ background: '#1e293b', border: '1px solid #2c3a52', borderRadius: 10, color: '#e7ebf3' }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+    <div className="chart-container">
+      <span className="card-label chart-container-label">Tipo de instrumento</span>
+      <ResponsiveContainer width="100%" height={130}>
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="pctCartera"
+            nameKey="category"
+            innerRadius={30}
+            outerRadius={54}
+            paddingAngle={1}
+            isAnimationActive={false}
+          >
+            {data.map((entry, i) => (
+              <Cell key={entry.category} fill={COLORS[i % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip
+            formatter={(value, name, item) => {
+              const rendimiento = (item.payload as CategoryStat)?.pctRendimiento
+              const pctText = `${Number(value).toFixed(1)}% de la cartera`
+              // La liquidez (y cualquier categoría sin coste de adquisición)
+              // no tiene plusvalía que mostrar — se omite la coletilla en
+              // vez de decir "sin datos", que sonaría a fallo cuando en
+              // realidad es que no aplica.
+              const text = rendimiento !== undefined ? `${pctText} · ${formatPct(rendimiento)} de rendimiento` : pctText
+              return [text, name]
+            }}
+            contentStyle={{ background: '#1e293b', border: '1px solid #2c3a52', borderRadius: 10, color: '#e7ebf3' }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
 
-        <div className="chart-legend category-chart-legend">
-          {data.map((d, i) => (
-            <div className="chart-legend-row" key={d.category}>
-              <span className="chart-legend-swatch" style={{ background: COLORS[i % COLORS.length] }} />
-              <span className="chart-legend-symbol">{d.category}</span>
-              <span className="chart-legend-pct">{d.pctCartera.toFixed(1)}%</span>
-            </div>
-          ))}
-        </div>
+      <div className="chart-legend">
+        {data.map((d, i) => (
+          <div className="chart-legend-row" key={d.category}>
+            <span className="chart-legend-swatch" style={{ background: COLORS[i % COLORS.length] }} />
+            <span className="chart-legend-symbol">{d.category}</span>
+            <span className="chart-legend-pct">{d.pctCartera.toFixed(1)}%</span>
+          </div>
+        ))}
       </div>
       {byCategory.has(SIN_CATEGORIA) && (
-        <p className="card-hint">
-          "{SIN_CATEGORIA}" son posiciones importadas antes de que la app leyera este dato — reimporta el extracto para clasificarlas.
+        <p className="card-hint chart-container-hint">
+          "{SIN_CATEGORIA}": reimporta el extracto para clasificarlas.
         </p>
       )}
-    </section>
+    </div>
   )
 }
