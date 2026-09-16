@@ -2,6 +2,7 @@ import { useLogos } from '../hooks/useLogos'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { usePrivacy } from '../hooks/usePrivacy'
 import { formatEur, formatNativePrice, formatPct } from '../utils/format'
+import { InfoPopover } from './InfoPopover'
 import { SymbolLogo } from './SymbolLogo'
 
 const MAX_MOVERS = 6
@@ -47,11 +48,15 @@ export function DayMoversPanel({ rows }: { rows: PortfolioRow[] }) {
           const up = (row.dayChangePct ?? 0) >= 0
           const logo = logos[row.symbol]
           return (
-            <div key={row.symbol} className={`mover-card ${up ? 'mover-up' : 'mover-down'}`} title={row.name}>
+            <div key={row.symbol} className={`mover-card ${up ? 'mover-up' : 'mover-down'}`}>
               <div className="mover-top">
                 <span className="mover-symbol-group">
                   {logo && <SymbolLogo url={logo} size={18} className="mover-logo" />}
                   <span className="mover-symbol">{row.symbol}</span>
+                  {/* El `title` nativo no se ve en táctil — el nombre completo
+                      del valor solo era alcanzable con ratón. Mismo popover
+                      accesible que el resto de la app. */}
+                  {row.name && <InfoPopover label={row.symbol} text={row.name} />}
                 </span>
                 <span className="mover-arrow">{up ? '▲' : '▼'}</span>
               </div>
