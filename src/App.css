@@ -317,6 +317,13 @@
   color: var(--text-h);
 }
 
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
 /* Botón de cierre explícito: en táctil no hay forma de "salirse" de algo
    como con el ratón, así que conviene que se vea cómo cerrarlo. */
 .info-close {
