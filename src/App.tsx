@@ -1,6 +1,5 @@
 import { lazy, Suspense, useState } from 'react'
 import './App.css'
-import { db } from './db/db'
 import { AppVersionPopover } from './components/AppVersionPopover'
 import { DayMoversPanel } from './components/DayMoversPanel'
 import { ImportButton, ImportFeedback, useXtbImport } from './components/ImportPanel'
@@ -39,26 +38,6 @@ function App() {
     }
   }
 
-  async function handleClearAll() {
-    const confirmed = window.confirm(
-      'Se borrará tu cartera de este dispositivo: posiciones, movimientos, operaciones cerradas y precios en caché. ' +
-        'Se conserva la tabla de símbolos (nombres y logos de las empresas), que no son datos tuyos y cuesta ' +
-        'crédito de la API volver a descargarlos. Esta acción no se puede deshacer. ¿Continuar?',
-    )
-    if (!confirmed) return
-
-    // symbolMappings se conserva a propósito: no contiene datos de la
-    // cartera, solo la equivalencia de tickers entre proveedores más el
-    // nombre y el logo ya descargados. Borrarla obligaría a volver a gastar
-    // crédito de Twelve Data en resolver cada logo.
-    await Promise.all([
-      db.transactions.clear(),
-      db.positions.clear(),
-      db.priceCache.clear(),
-      db.closedTrades.clear(),
-    ])
-  }
-
   return (
     <PrivacyProvider>
       <div className="app">
@@ -81,25 +60,6 @@ function App() {
           <div className="tabs-right">
             <PrivacyToggleButton />
             <ImportButton state={importState} />
-            <button
-              className="button button-sm button-danger"
-              onClick={handleClearAll}
-              // En móvil solo queda el icono, así que el nombre de la acción
-              // tiene que llegar igual a quien navegue con lector de pantalla.
-              aria-label="Borrar todo"
-              title="Borrar todo"
-            >
-              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path
-                  d="M2.5 4h11M6.5 4V2.5h3V4M4 4l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L12 4"
-                  stroke="currentColor"
-                  strokeWidth="1.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span className="clear-btn-label">Borrar todo</span>
-            </button>
           </div>
         </nav>
 
@@ -152,7 +112,8 @@ function PrivacyToggleButton() {
       className={`button button-sm button-ghost ${hidden ? 'active' : ''}`}
       onClick={toggle}
       aria-pressed={hidden}
-      // Mismo motivo que en "Borrar todo": en móvil solo queda el icono.
+      // En móvil solo queda el icono, así que el nombre de la acción tiene
+      // que llegar igual a quien navegue con lector de pantalla.
       aria-label={label}
       title={label}
     >

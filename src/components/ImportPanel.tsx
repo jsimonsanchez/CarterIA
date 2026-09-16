@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { importXtbFile, type ImportSummary } from '../services/importPortfolio'
+import { clearPortfolio, importXtbFile, type ImportSummary } from '../services/importPortfolio'
 
 type ImportStatus = 'idle' | 'loading' | 'done' | 'error'
 
@@ -8,6 +8,10 @@ const FEEDBACK_TIMEOUT_MS = 60_000
 /** Estado + lógica de importación, compartidos entre el botón (junto a las pestañas) y el panel de resultado (debajo). */
 export function useXtbImport() {
   const inputRef = useRef<HTMLInputElement>(null)
+  // Borrado lanzado al pulsar el botón. La importación lo espera antes de
+  // escribir: si no, un borrado todavía en curso podría llevarse por delante
+  // los movimientos recién importados.
+  const clearingRef = useRef<Promise<void>>(Promise.resolve())
   const [status, setStatus] = useState<ImportStatus>('idle')
   const [summary, setSummary] = useState<ImportSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -20,10 +24,25 @@ export function useXtbImport() {
     return () => clearTimeout(timer)
   }, [status])
 
+  /**
+   * Al pulsar "Importar extracto": borra la cartera y abre el selector de
+   * fichero. El borrado ocurre aunque luego no se elija ningún fichero.
+   *
+   * El selector se abre sin esperar al borrado a propósito: los navegadores
+   * solo dejan abrirlo dentro del mismo gesto del usuario, y un `await`
+   * previo puede hacer que lo bloqueen (Safari sobre todo).
+   */
+  function startImport() {
+    clearingRef.current = clearPortfolio()
+    setStatus('idle')
+    inputRef.current?.click()
+  }
+
   async function handleFile(file: File) {
     setStatus('loading')
     setError(null)
     try {
+      await clearingRef.current
       const result = await importXtbFile(file)
       setSummary(result)
       setStatus('done')
@@ -35,17 +54,17 @@ export function useXtbImport() {
     }
   }
 
-  return { inputRef, status, summary, error, handleFile }
+  return { inputRef, status, summary, error, handleFile, startImport }
 }
 
 type XtbImportState = ReturnType<typeof useXtbImport>
 
 export function ImportButton({ state }: { state: XtbImportState }) {
-  const { inputRef, status, handleFile } = state
+  const { inputRef, status, handleFile, startImport } = state
 
   return (
     <>
-      <button className="button button-sm" disabled={status === 'loading'} onClick={() => inputRef.current?.click()}>
+      <button className="button button-sm" disabled={status === 'loading'} onClick={startImport}>
         {status === 'loading' ? (
           'Importando…'
         ) : (

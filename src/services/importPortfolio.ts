@@ -13,6 +13,27 @@ export interface ImportSummary {
 }
 
 /**
+ * Borra la cartera de este dispositivo: posiciones, movimientos, operaciones
+ * cerradas y precios en caché. Se ejecuta al pulsar "Importar extracto",
+ * antes incluso de elegir fichero (y aunque luego no se elija ninguno): el
+ * extracto de XTB trae el histórico completo, así que cada importación parte
+ * de cero en vez de mezclarse con restos de la anterior.
+ *
+ * symbolMappings se conserva a propósito: no contiene datos de la cartera,
+ * solo la equivalencia de tickers entre proveedores más el nombre y el logo
+ * ya descargados. Borrarla obligaría a volver a gastar crédito de Twelve Data
+ * en resolver cada logo.
+ */
+export async function clearPortfolio(): Promise<void> {
+  await Promise.all([
+    db.transactions.clear(),
+    db.positions.clear(),
+    db.priceCache.clear(),
+    db.closedTrades.clear(),
+  ])
+}
+
+/**
  * Importa un extracto de XTB (.xlsx): parsea "Cash Operations" y "Closed
  * Positions", persiste (upsert por id — reimportar el mismo extracto no
  * duplica), recalcula posiciones desde el histórico completo y da de alta
