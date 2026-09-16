@@ -763,11 +763,23 @@
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
-  transition: color 0.1s ease;
+  transition: color 0.1s ease, background-color 0.1s ease;
 }
 
 .sortable-th:hover {
   color: var(--text-h);
+}
+
+.sortable-th.col-drag-over {
+  background-color: var(--accent-soft);
+}
+
+.th-drag-handle {
+  display: inline-block;
+  margin-right: 3px;
+  cursor: grab;
+  color: var(--text-muted);
+  letter-spacing: -1px;
 }
 
 .sort-arrow {
