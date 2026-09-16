@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { categoryLabel } from '../domain/instrumentCategory'
 import { isPriceStale } from '../domain/priceFreshness'
 import { useLogos } from '../hooks/useLogos'
@@ -82,10 +82,13 @@ export function PositionsTable({ rows, isLoading, onRefresh, refreshing, refresh
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [query, setQuery] = useState('')
   const [columnOrder, setColumnOrder] = useState<SortKey[]>(loadColumnOrder)
+  const [draggingKey, setDraggingKey] = useState<SortKey | null>(null)
   const [dragOverKey, setDragOverKey] = useState<SortKey | null>(null)
-  // Ref y no estado: durante el arrastre no hace falta volver a renderizar,
-  // solo saber qué columna se soltó al final.
-  const draggedKeyRef = useRef<SortKey | null>(null)
+  const dragRef = useRef<{ key: SortKey; startX: number; active: boolean } | null>(null)
+  // Al soltar un arrastre el navegador dispara también un click sobre la
+  // cabecera: sin esto, reordenar una columna la ordenaría de paso.
+  const suppressClickRef = useRef(false)
+  const wrapperRef = useRef<HTMLDivElement>(null)
   // Antes del early return: los hooks no pueden llamarse condicionalmente.
   const logos = useLogos(rows.map((r) => r.symbol))
 
@@ -140,14 +143,74 @@ export function PositionsTable({ rows, isLoading, onRefresh, refreshing, refresh
     }
   }
 
-  function handleColumnDrop(targetKey: SortKey) {
-    const draggedKey = draggedKeyRef.current
-    if (!draggedKey || draggedKey === targetKey) return
+  function moveColumn(draggedKey: SortKey, targetKey: SortKey) {
+    if (draggedKey === targetKey) return
     setColumnOrder((prev) => {
+      const from = prev.indexOf(draggedKey)
+      const to = prev.indexOf(targetKey)
       const next = prev.filter((k) => k !== draggedKey)
-      next.splice(next.indexOf(targetKey), 0, draggedKey)
+      // Hacia la derecha queda detrás del destino; hacia la izquierda, delante.
+      next.splice(from < to ? next.indexOf(targetKey) + 1 : next.indexOf(targetKey), 0, draggedKey)
       return next
     })
+  }
+
+  // Punteros en vez del drag & drop nativo de HTML, que no funciona con el
+  // dedo. Con ratón se arrastra desde cualquier punto de la cabecera; en
+  // táctil solo desde el asa ⠿, para no robarle el gesto al scroll horizontal
+  // de la tabla.
+  function handleHeaderPointerDown(e: ReactPointerEvent<HTMLTableCellElement>, key: SortKey) {
+    if (e.button !== 0) return
+    const fromHandle = (e.target as HTMLElement).closest('.th-drag-handle') !== null
+    if (e.pointerType !== 'mouse' && !fromHandle) return
+    dragRef.current = { key, startX: e.clientX, active: false }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  function handleHeaderPointerMove(e: ReactPointerEvent<HTMLTableCellElement>) {
+    const drag = dragRef.current
+    if (!drag) return
+    if (!drag.active) {
+      if (Math.abs(e.clientX - drag.startX) < 6) return
+      drag.active = true
+      setDraggingKey(drag.key)
+    }
+    const wrapper = wrapperRef.current
+    if (wrapper) {
+      const rect = wrapper.getBoundingClientRect()
+      if (e.clientX < rect.left + 32) wrapper.scrollLeft -= 12
+      else if (e.clientX > rect.right - 32) wrapper.scrollLeft += 12
+    }
+    // Se busca a la altura de la propia cabecera: si el dedo se desvía hacia
+    // arriba o abajo, el arrastre no debería perderse.
+    const headerRect = e.currentTarget.getBoundingClientRect()
+    const target = document
+      .elementFromPoint(e.clientX, headerRect.top + headerRect.height / 2)
+      ?.closest<HTMLElement>('th[data-col]')
+    const overKey = (target?.dataset.col as SortKey | undefined) ?? null
+    setDragOverKey(overKey)
+  }
+
+  function endHeaderDrag(commit: boolean) {
+    const drag = dragRef.current
+    dragRef.current = null
+    if (drag?.active) {
+      suppressClickRef.current = true
+      // Por si el click no llega (se soltó fuera de la cabecera): que no se
+      // coma el siguiente click legítimo.
+      setTimeout(() => (suppressClickRef.current = false), 0)
+      if (commit && dragOverKey) moveColumn(drag.key, dragOverKey)
+    }
+    setDraggingKey(null)
+    setDragOverKey(null)
+  }
+
+  function handleHeaderClick(key: SortKey) {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false
+      return
+    }
+    handleSort(key)
   }
 
   const orderedColumns = columnOrder.map((key) => COLUMN_BY_KEY.get(key)!)
@@ -171,36 +234,26 @@ export function PositionsTable({ rows, isLoading, onRefresh, refreshing, refresh
       </div>
       <div className="positions-column-content">
         {refreshError && <p className="warning-text">{refreshError}</p>}
-        <div className="positions-table-wrapper scroll-thin">
+        <div className="positions-table-wrapper scroll-thin" ref={wrapperRef}>
         <table className="positions-table">
           <thead>
             <tr>
               {orderedColumns.map((col) => (
                 <th
                   key={col.key}
-                  className={`sortable-th ${col.num ? 'num' : ''} ${dragOverKey === col.key ? 'col-drag-over' : ''}`}
-                  draggable
-                  onClick={() => handleSort(col.key)}
-                  onDragStart={(e) => {
-                    draggedKeyRef.current = col.key
-                    e.dataTransfer.effectAllowed = 'move'
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault()
-                    e.dataTransfer.dropEffect = 'move'
-                    if (dragOverKey !== col.key) setDragOverKey(col.key)
-                  }}
-                  onDragLeave={() => setDragOverKey((k) => (k === col.key ? null : k))}
-                  onDrop={(e) => {
-                    e.preventDefault()
-                    handleColumnDrop(col.key)
-                    setDragOverKey(null)
-                  }}
-                  onDragEnd={() => {
-                    draggedKeyRef.current = null
-                    setDragOverKey(null)
-                  }}
-                  title="Arrastra para reordenar la columna"
+                  data-col={col.key}
+                  className={[
+                    'sortable-th',
+                    col.num ? 'num' : '',
+                    draggingKey === col.key ? 'col-dragging' : '',
+                    draggingKey && dragOverKey === col.key && draggingKey !== col.key ? 'col-drag-over' : '',
+                  ].join(' ')}
+                  onClick={() => handleHeaderClick(col.key)}
+                  onPointerDown={(e) => handleHeaderPointerDown(e, col.key)}
+                  onPointerMove={handleHeaderPointerMove}
+                  onPointerUp={() => endHeaderDrag(true)}
+                  onPointerCancel={() => endHeaderDrag(false)}
+                  title="Pulsa para ordenar · arrastra para mover la columna"
                 >
                   <span className="th-drag-handle" aria-hidden="true">
                     ⠿

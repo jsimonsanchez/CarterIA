@@ -772,6 +772,12 @@
 
 .sortable-th.col-drag-over {
   background-color: var(--accent-soft);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.sortable-th.col-dragging {
+  opacity: 0.45;
+  cursor: grabbing;
 }
 
 .th-drag-handle {
@@ -780,6 +786,16 @@
   cursor: grab;
   color: var(--text-muted);
   letter-spacing: -1px;
+  /* El dedo sobre el asa arrastra la columna, no desplaza la tabla. */
+  touch-action: none;
+}
+
+@media (pointer: coarse) {
+  /* Área táctil más generosa: el glifo solo mide unos 8px de ancho. */
+  .th-drag-handle {
+    padding: 8px 6px;
+    margin: -8px 0 -8px -6px;
+  }
 }
 
 .sort-arrow {
