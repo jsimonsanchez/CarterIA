@@ -47,6 +47,12 @@
     box-shadow 0.15s ease;
 }
 
+/* [title] solo está presente cuando hay nombre que mostrar — la tarjeta es
+   entonces disparador de su propio popover (ver MoverCard). */
+.mover-card[title] {
+  cursor: pointer;
+}
+
 .mover-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
