@@ -650,6 +650,15 @@
   min-width: 0;
 }
 
+/* Sin esto, el contenedor de la tabla no tenía min-width:0 y su ancho
+   mínimo por defecto (auto) es el min-content de la tabla — con 8 columnas
+   eso es más ancho que la celda del grid, y la pista de esa columna
+   implícita crecía para encajarlo, empujando el borde derecho de la tabla
+   por encima de la gráfica de al lado en vez de mostrar scroll horizontal. */
+.positions-column-content {
+  min-width: 0;
+}
+
 /* La separación la pone ahora el hueco del grid. */
 .positions-column .table-toolbar {
   margin-bottom: 0;
