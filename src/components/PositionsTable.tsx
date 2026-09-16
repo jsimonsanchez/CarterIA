@@ -9,7 +9,7 @@ import { InfoPopover } from './InfoPopover'
 import { PositionDetail } from './PositionDetail'
 import { SymbolLogo } from './SymbolLogo'
 
-type SortKey = 'symbol' | 'quantity' | 'averageCost' | 'price' | 'value' | 'pnl' | 'pnlPct'
+type SortKey = 'symbol' | 'quantity' | 'averageCost' | 'price' | 'dayChangePct' | 'value' | 'pnl' | 'pnlPct'
 type SortDir = 'asc' | 'desc'
 
 const COLUMNS: { key: SortKey; label: string; num?: boolean }[] = [
@@ -17,6 +17,7 @@ const COLUMNS: { key: SortKey; label: string; num?: boolean }[] = [
   { key: 'quantity', label: 'Cantidad', num: true },
   { key: 'averageCost', label: 'Coste medio', num: true },
   { key: 'price', label: 'Precio actual', num: true },
+  { key: 'dayChangePct', label: '% 24h', num: true },
   { key: 'value', label: 'Valor', num: true },
   { key: 'pnl', label: 'Plusvalía', num: true },
   { key: 'pnlPct', label: '% Plusvalía', num: true },
@@ -32,6 +33,8 @@ function sortValue(row: PortfolioRow, key: SortKey): number | string {
       return row.averageCost
     case 'price':
       return row.currentPriceNative ?? -Infinity
+    case 'dayChangePct':
+      return row.dayChangePct ?? -Infinity
     case 'value':
       return row.marketValueEur ?? -Infinity
     case 'pnl':
@@ -137,7 +140,7 @@ export function PositionsTable({ rows, isLoading, onRefresh, refreshing, refresh
           <tbody>
             {sorted.length === 0 ? (
               <tr>
-                <td colSpan={7} className="empty-state">
+                <td colSpan={8} className="empty-state">
                   Sin resultados para "{query}".
                 </td>
               </tr>
@@ -179,6 +182,10 @@ function PositionRow({
 }) {
   const { hidden } = usePrivacy()
   const tone = (row.unrealizedPnlEur ?? 0) >= 0 ? 'positive' : 'negative'
+  // Aparte de `tone`: es la plusvalía sobre el coste, no la variación de
+  // hoy, así que puede tener signo contrario un día que el precio baja pero
+  // la posición sigue en verde desde que se compró.
+  const dayTone = row.dayChangePct !== undefined ? (row.dayChangePct >= 0 ? 'positive' : 'negative') : ''
   const isStale = isPriceStale(row.priceFetchedAt)
 
   return (
@@ -230,6 +237,7 @@ function PositionRow({
             <span className="card-hint">{isLoading ? '…' : 'sin precio'}</span>
           )}
         </td>
+        <td className={`num ${dayTone}`}>{row.dayChangePct !== undefined ? formatPct(row.dayChangePct) : '—'}</td>
         <td className="num">{row.marketValueEur !== undefined ? formatEur(row.marketValueEur, hidden) : '—'}</td>
         <td className={`num ${tone}`}>
           {row.unrealizedPnlEur !== undefined ? formatEur(row.unrealizedPnlEur, hidden) : '—'}
@@ -238,7 +246,7 @@ function PositionRow({
       </tr>
       {expanded && (
         <tr className="detail-row">
-          <td colSpan={7}>
+          <td colSpan={8}>
             <PositionDetail symbol={row.symbol} marketValueEur={row.marketValueEur} />
           </td>
         </tr>
