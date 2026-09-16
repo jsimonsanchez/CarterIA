@@ -8,7 +8,7 @@ export function ReportsPanel() {
   const { hidden } = usePrivacy()
   const transactions = useLiveQuery(() => db.transactions.toArray(), [])
 
-  if (!transactions) return null
+  if (!transactions || transactions.length === 0) return null
 
   const dividends = sumByType(transactions, 'dividend')
   const interest = sumByType(transactions, 'interest')
@@ -24,19 +24,19 @@ export function ReportsPanel() {
       <dl className="report-list">
         <div>
           <dt>Dividendos cobrados</dt>
-          <dd className="positive">{formatEur(dividends, hidden)}</dd>
+          <dd className={toneOf(dividends)}>{formatEur(dividends, hidden)}</dd>
         </div>
         <div>
           <dt>Comisiones</dt>
-          <dd className="negative">{formatEur(commissions, hidden)}</dd>
+          <dd className={toneOf(commissions)}>{formatEur(commissions, hidden)}</dd>
         </div>
         <div>
           <dt>Impuestos</dt>
-          <dd className="negative">{formatEur(taxes, hidden)}</dd>
+          <dd className={toneOf(taxes)}>{formatEur(taxes, hidden)}</dd>
         </div>
         <div>
           <dt>Intereses de efectivo</dt>
-          <dd className="positive">{formatEur(interest, hidden)}</dd>
+          <dd className={toneOf(interest)}>{formatEur(interest, hidden)}</dd>
         </div>
         <div>
           <dt>Ingresos de efectivo</dt>
@@ -53,4 +53,11 @@ function sumByType(transactions: { type: string; total: number }[], type: string
 
 function sumAmount(transactions: { total: number }[]): number {
   return transactions.reduce((acc, t) => acc + t.total, 0)
+}
+
+// Un 0,00 € en verde o en rojo sugiere un resultado que no existe.
+function toneOf(amount: number): string | undefined {
+  if (amount > 0) return 'positive'
+  if (amount < 0) return 'negative'
+  return undefined
 }

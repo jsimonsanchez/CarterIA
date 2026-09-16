@@ -10,12 +10,41 @@ const HIDDEN_AMOUNT = '••••• €'
  */
 export function formatEur(value: number, hidden = false): string {
   if (hidden) return HIDDEN_AMOUNT
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(value)
+  return EUR_FORMAT.format(value)
 }
 
-export function formatPct(value: number): string {
+// useGrouping 'always': en es-ES los números de 4 cifras van sin separador
+// de miles por defecto, y en una misma columna "8172,00 €" quedaba al lado
+// de "51.358,60 €".
+const EUR_FORMAT = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', useGrouping: 'always' })
+
+function formatNumber(value: number, minDecimals: number, maxDecimals = minDecimals): string {
+  return value.toLocaleString('es-ES', {
+    minimumFractionDigits: minDecimals,
+    maximumFractionDigits: maxDecimals,
+    useGrouping: 'always',
+  })
+}
+
+/** Variación con signo: "+1,81%", "-0,87%". */
+export function formatPct(value: number, decimals = 2): string {
   const sign = value > 0 ? '+' : ''
-  return `${sign}${value.toFixed(2)}%`
+  return `${sign}${formatNumber(value, decimals)}%`
+}
+
+/** Peso dentro de un total, sin signo: "17,5%". */
+export function formatShare(value: number): string {
+  return `${formatNumber(value, 1)}%`
+}
+
+/**
+ * `hidden` también oculta cantidades: junto al precio por acción, que sí se
+ * muestra, la cantidad basta para calcular el importe que el modo privacidad
+ * pretende esconder.
+ */
+export function formatQuantity(value: number, hidden = false): string {
+  if (hidden) return '•••'
+  return formatNumber(value, 0, 4)
 }
 
 export function formatDate(iso: string): string {
@@ -50,10 +79,7 @@ function toDisplayPrice(price: number, currency: string): { value: number; curre
  */
 export function formatNativePrice(price: number, currency: string, decimals = DEFAULT_PRICE_DECIMALS): string {
   const display = toDisplayPrice(price, currency)
-  const formatted = display.value.toLocaleString('es-ES', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  })
+  const formatted = formatNumber(display.value, decimals)
   return `${formatted} ${display.currency}`
 }
 

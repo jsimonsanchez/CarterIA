@@ -4,7 +4,7 @@ import { isPriceStale } from '../domain/priceFreshness'
 import { useLogos } from '../hooks/useLogos'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { usePrivacy } from '../hooks/usePrivacy'
-import { formatEur, formatNativePrice, formatPct, priceDecimalsFor } from '../utils/format'
+import { formatEur, formatQuantity, formatNativePrice, formatPct, priceDecimalsFor } from '../utils/format'
 import { InfoPopover } from './InfoPopover'
 import { PositionDetail } from './PositionDetail'
 import { SymbolLogo } from './SymbolLogo'
@@ -343,7 +343,7 @@ function PositionRow({
       case 'quantity':
         return (
           <td key={key} className="num">
-            {row.quantity.toLocaleString('es-ES', { maximumFractionDigits: 4 })}
+            {formatQuantity(row.quantity, hidden)}
           </td>
         )
       case 'averageCost':

@@ -56,8 +56,8 @@ describe('priceDecimalsFor', () => {
 
 describe('formatPct', () => {
   it('antepone el signo + solo a los positivos', () => {
-    assert.equal(formatPct(12.3), '+12.30%')
-    assert.equal(formatPct(-4.5), '-4.50%')
-    assert.equal(formatPct(0), '0.00%')
+    assert.equal(formatPct(12.3), '+12,30%')
+    assert.equal(formatPct(-4.5), '-4,50%')
+    assert.equal(formatPct(0), '0,00%')
   })
 })

@@ -6,7 +6,7 @@ import type { ClosedTrade } from '../domain/types'
 import { cagr, MIN_DAYS_TO_ANNUALIZE } from '../domain/xirr'
 import { useLogos } from '../hooks/useLogos'
 import { usePrivacy } from '../hooks/usePrivacy'
-import { formatDate, formatEur, formatPct } from '../utils/format'
+import { formatDate, formatEur, formatQuantity, formatPct } from '../utils/format'
 import { SymbolLogo } from './SymbolLogo'
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24
@@ -211,7 +211,7 @@ function TradeList({ trades }: { trades: ClosedTrade[] }) {
           return (
             <tr key={t.id}>
               <td>{formatDate(t.closeDate)}</td>
-              <td className="num">{t.quantity.toLocaleString('es-ES', { maximumFractionDigits: 4 })}</td>
+              <td className="num">{formatQuantity(t.quantity, hidden)}</td>
               <td className="num">{formatEur(t.purchaseValueEur, hidden)}</td>
               <td className="num">{formatEur(t.saleValueEur, hidden)}</td>
               <td className={`num ${tone}`}>{formatEur(t.realizedPnlEur, hidden)}</td>

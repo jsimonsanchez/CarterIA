@@ -380,6 +380,37 @@
     display: none;
   }
 
+  /* "Posiciones cerradas" se partía en dos líneas y descuadraba la fila. */
+  .tab-label-long {
+    display: none;
+  }
+
+  /* Más específico que la regla base, que se declara más abajo. */
+  .tab .tab-label-short {
+    display: inline;
+  }
+
+  /* Dos columnas fijas: con el mínimo de 150px de la regla base, a 375px
+     solo cabía una y las seis tarjetas ocupaban casi dos pantallas. */
+  .movers-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .mover-bottom {
+    flex-wrap: wrap;
+    column-gap: 6px;
+  }
+
+  .mover-card {
+    padding: 10px 12px;
+    gap: 4px;
+  }
+
+  .mover-pct {
+    font-size: 22px;
+  }
+
   /* La fila de pestañas no cabe en 375px con los botones enteros y empujaba
      la página entera hacia los lados. "Ocultar importes" se queda solo con
      el icono; el texto sigue disponible para lectores de pantalla vía
@@ -450,6 +481,10 @@
 
 .tab:hover {
   color: var(--text-h);
+}
+
+.tab-label-short {
+  display: none;
 }
 
 .tab.active {
@@ -572,6 +607,19 @@
   color: var(--text-muted);
 }
 
+/* .card-value y .card-sub fijan su propio color y, al declararse después de
+   las utilidades .positive/.negative de index.css, las pisaban: las
+   plusvalías del resumen salían siempre en blanco y gris. */
+.card-value.positive,
+.card-sub.positive {
+  color: var(--positive);
+}
+
+.card-value.negative,
+.card-sub.negative {
+  color: var(--negative);
+}
+
 .card-hint {
   font-size: 12px;
   color: var(--text-muted);
@@ -641,6 +689,26 @@
   .main-grid .sidebar-charts {
     grid-column: auto;
     grid-row: auto;
+    /* Las dos tartas están pensadas para 150px de ancho: a ancho completo,
+       una encima de otra, eran dos paneles casi vacíos de 350px de alto. */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    align-items: start;
+  }
+
+  /* Con la tabla desplazada en horizontal, el símbolo se queda fijo a la
+     izquierda para saber de qué fila son las cifras. */
+  .positions-table thead th:first-child,
+  .positions-table .position-row > td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--surface);
+    box-shadow: inset -1px 0 0 var(--border);
+  }
+
+  .positions-table .position-row:hover > td:first-child {
+    background: var(--surface-hover);
   }
 }
 

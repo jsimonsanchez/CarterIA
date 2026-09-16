@@ -4,7 +4,7 @@ import { db } from '../db/db'
 import type { Transaction } from '../domain/types'
 import { categoryLabel, SIN_CATEGORIA } from '../domain/instrumentCategory'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
-import { formatPct } from '../utils/format'
+import { formatPct, formatShare } from '../utils/format'
 
 // Mismos colores que AllocationChart, en el mismo orden, para que una
 // categoría tenga siempre el mismo color en las dos gráficas.
@@ -50,9 +50,7 @@ export function CategoryPerformanceChart({ rows }: { rows: PortfolioRow[] }) {
   const positionsValue = withPrice.reduce((acc, r) => acc + r.marketValueEur!, 0)
   const totalValue = positionsValue + cashBalance
 
-  if (totalValue <= 0) {
-    return <p className="empty-state">Sin datos de valor para graficar todavía.</p>
-  }
+  if (totalValue <= 0) return null
 
   const byCategory = new Map<string, PortfolioRow[]>()
   for (const row of withPrice) {
@@ -99,7 +97,7 @@ export function CategoryPerformanceChart({ rows }: { rows: PortfolioRow[] }) {
           <Tooltip
             formatter={(value, name, item) => {
               const rendimiento = (item.payload as CategoryStat)?.pctRendimiento
-              const pctText = `${Number(value).toFixed(1)}% de la cartera`
+              const pctText = `${formatShare(Number(value))} de la cartera`
               // La liquidez (y cualquier categoría sin coste de adquisición)
               // no tiene plusvalía que mostrar — se omite la coletilla en
               // vez de decir "sin datos", que sonaría a fallo cuando en
@@ -117,7 +115,7 @@ export function CategoryPerformanceChart({ rows }: { rows: PortfolioRow[] }) {
           <div className="chart-legend-row" key={d.category}>
             <span className="chart-legend-swatch" style={{ background: COLORS[i % COLORS.length] }} />
             <span className="chart-legend-symbol">{d.category}</span>
-            <span className="chart-legend-pct">{d.pctCartera.toFixed(1)}%</span>
+            <span className="chart-legend-pct">{formatShare(d.pctCartera)}</span>
           </div>
         ))}
       </div>

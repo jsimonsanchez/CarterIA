@@ -1,7 +1,7 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { usePrivacy } from '../hooks/usePrivacy'
-import { formatEur } from '../utils/format'
+import { formatEur, formatShare } from '../utils/format'
 
 const COLORS = ['#38bdf8', '#a78bfa', '#f472b6', '#fb923c', '#facc15', '#4ade80', '#2dd4bf', '#818cf8', '#fb7185', '#c084fc']
 const LEGEND_LIMIT = 8
@@ -13,9 +13,8 @@ export function AllocationChart({ rows }: { rows: PortfolioRow[] }) {
     .map((r) => ({ name: r.symbol, value: r.marketValueEur ?? 0 }))
     .sort((a, b) => b.value - a.value)
 
-  if (data.length === 0) {
-    return <p className="empty-state">Sin datos de valor para graficar todavía.</p>
-  }
+  // Sin mensaje propio: la tabla de al lado ya explica que no hay posiciones.
+  if (data.length === 0) return null
 
   const total = data.reduce((acc, d) => acc + d.value, 0)
 
@@ -44,7 +43,7 @@ export function AllocationChart({ rows }: { rows: PortfolioRow[] }) {
             formatter={(value, name) => {
               const numericValue = Number(value)
               const pct = total > 0 ? (numericValue / total) * 100 : 0
-              return [`${formatEur(numericValue, hidden)} (${pct.toFixed(1)}%)`, name]
+              return [`${formatEur(numericValue, hidden)} (${formatShare(pct)})`, name]
             }}
             contentStyle={{ background: '#1e293b', border: '1px solid #2c3a52', borderRadius: 10, color: '#e7ebf3' }}
           />
@@ -56,14 +55,14 @@ export function AllocationChart({ rows }: { rows: PortfolioRow[] }) {
           <div className="chart-legend-row" key={item.name}>
             <span className="chart-legend-swatch" style={{ background: COLORS[i % COLORS.length] }} />
             <span className="chart-legend-symbol">{item.name}</span>
-            <span className="chart-legend-pct">{total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0'}%</span>
+            <span className="chart-legend-pct">{formatShare(total > 0 ? (item.value / total) * 100 : 0)}</span>
           </div>
         ))}
         {rest.length > 0 && (
           <div className="chart-legend-row">
             <span className="chart-legend-swatch" style={{ background: 'var(--border)' }} />
             <span className="chart-legend-symbol">Otros ({rest.length})</span>
-            <span className="chart-legend-pct">{total > 0 ? ((restValue / total) * 100).toFixed(1) : '0.0'}%</span>
+            <span className="chart-legend-pct">{formatShare(total > 0 ? (restValue / total) * 100 : 0)}</span>
           </div>
         )}
       </div>

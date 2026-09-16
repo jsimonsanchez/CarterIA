@@ -1,7 +1,7 @@
 import { useLogos } from '../hooks/useLogos'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { usePrivacy } from '../hooks/usePrivacy'
-import { formatEur, formatNativePrice } from '../utils/format'
+import { formatEur, formatNativePrice, formatPct } from '../utils/format'
 import { SymbolLogo } from './SymbolLogo'
 
 const MAX_MOVERS = 6
@@ -37,8 +37,7 @@ export function DayMoversPanel({ rows }: { rows: PortfolioRow[] }) {
         <h2>Mayor volatilidad hoy</h2>
         {totalDayChangePct !== undefined && (
           <span className={`movers-total ${totalUp ? 'positive' : 'negative'}`}>
-            {totalUp ? '📈' : '📉'} {totalUp ? '+' : ''}
-            {totalDayChangePct.toFixed(2)}% ({totalDayChangeEur >= 0 ? '+' : ''}
+            {totalUp ? '📈' : '📉'} {formatPct(totalDayChangePct)} ({totalDayChangeEur > 0 ? '+' : ''}
             {formatEur(totalDayChangeEur, hidden)})
           </span>
         )}
@@ -57,8 +56,7 @@ export function DayMoversPanel({ rows }: { rows: PortfolioRow[] }) {
                 <span className="mover-arrow">{up ? '▲' : '▼'}</span>
               </div>
               <span className="mover-pct">
-                {up ? '+' : ''}
-                {row.dayChangePct!.toFixed(2)}%
+                {formatPct(row.dayChangePct!)}
               </span>
               <div className="mover-bottom">
                 <span className="mover-price">
@@ -68,7 +66,7 @@ export function DayMoversPanel({ rows }: { rows: PortfolioRow[] }) {
                 </span>
                 {row.dayChangeEur !== undefined && (
                   <span className="mover-eur">
-                    {row.dayChangeEur >= 0 ? '+' : ''}
+                    {row.dayChangeEur > 0 ? '+' : ''}
                     {formatEur(row.dayChangeEur, hidden)}
                   </span>
                 )}
