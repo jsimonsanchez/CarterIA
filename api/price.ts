@@ -16,6 +16,13 @@ interface PriceResult {
    * suficientes para saberlo (se trata como fresco, para no ocultar de más).
    */
   isTodaySession?: boolean
+  /**
+   * Variación del pre-mercado respecto al cierre de ayer (`price`, que antes
+   * de la apertura sigue siendo ese cierre). Solo mientras el mercado del
+   * valor aún no ha abierto hoy y está en su franja de pre-mercado — en la
+   * práctica, EE. UU.: Yahoo da esa franja vacía para las plazas europeas.
+   */
+  preMarketChangePct?: number
   /** Nombre completo del instrumento (p.ej. "Apple Inc."), cuando el proveedor lo da. */
   name?: string
 }
@@ -135,6 +142,36 @@ function sesionDeHoy(
   return typeof inicioSesion === 'number' ? regularMarketTime >= inicioSesion : undefined
 }
 
+/**
+ * Último precio negociado en la franja de pre-mercado, o null si no hay.
+ *
+ * Petición aparte a propósito: con `range`/`includePrePost` Yahoo cambia el
+ * `previousClose` que devuelve, y la variación del día ya se descuadró una
+ * vez por eso. La petición por defecto sigue siendo la fuente del precio y
+ * del cierre anterior; esta solo aporta el precio de pre-mercado.
+ */
+async function fetchYahooPreMarketPrice(host: string, symbol: string, preStart: number): Promise<number | null> {
+  const url = `https://${host}/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1m&range=1d&includePrePost=true`
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': YAHOO_USER_AGENT } })
+    if (!res.ok) return null
+    const data = await res.json()
+    const result = data?.chart?.result?.[0]
+    const timestamps: unknown = result?.timestamp
+    const closes: unknown = result?.indicators?.quote?.[0]?.close
+    if (!Array.isArray(timestamps) || !Array.isArray(closes)) return null
+    for (let i = timestamps.length - 1; i >= 0; i--) {
+      const t = timestamps[i]
+      const close = closes[i]
+      if (typeof t !== 'number' || t < preStart) break
+      if (typeof close === 'number' && close > 0) return close
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
 async function fetchYahooFromHost(host: string, symbol: string): Promise<PriceResult | null> {
   const url = `https://${host}/v8/finance/chart/${encodeURIComponent(symbol)}`
   try {
@@ -157,12 +194,29 @@ async function fetchYahooFromHost(host: string, symbol: string): Promise<PriceRe
 
     const name = result?.meta?.longName ?? result?.meta?.shortName
 
+    let preMarketChangePct: number | undefined
+    const pre = result?.meta?.currentTradingPeriod?.pre
+    const now = Date.now() / 1000
+    if (
+      isTodaySession === false &&
+      typeof pre?.start === 'number' &&
+      typeof pre?.end === 'number' &&
+      now >= pre.start &&
+      now < pre.end
+    ) {
+      const prePrice = await fetchYahooPreMarketPrice(host, symbol, pre.start)
+      if (prePrice !== null && price > 0) {
+        preMarketChangePct = ((prePrice - price) / price) * 100
+      }
+    }
+
     return {
       price,
       currency,
       source: 'yahoo',
       previousClose: typeof previousClose === 'number' ? previousClose : undefined,
       isTodaySession,
+      preMarketChangePct,
       name: typeof name === 'string' ? name : undefined,
     }
   } catch {

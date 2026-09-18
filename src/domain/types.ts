@@ -43,6 +43,8 @@ export interface PriceCacheEntry {
   previousClose?: number
   /** false cuando el mercado de este valor todavía no ha abierto hoy y "price" sigue siendo el cierre de la sesión anterior — evita calcular la variación diaria con datos de ayer. undefined = desconocido (se trata como fresco). */
   isTodaySession?: boolean
+  /** Variación de pre-mercado sobre el cierre de ayer, solo si el mercado aún no ha abierto hoy — ver `api/price.ts`. */
+  preMarketChangePct?: number
 }
 
 /**

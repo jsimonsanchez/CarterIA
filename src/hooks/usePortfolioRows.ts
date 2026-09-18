@@ -24,6 +24,13 @@ export interface PortfolioRow {
   /** % de variación respecto al cierre de la sesión anterior — igual en cualquier divisa, no hace falta convertir. */
   dayChangePct?: number
   dayChangeEur?: number
+  /**
+   * Variación de pre-mercado, solo cuando no hay `dayChangePct` porque el
+   * mercado aún no ha abierto. Va aparte a propósito: no entra en la
+   * variación total de la cartera ni en el panel de volatilidad, porque el
+   * broker no negocia en pre-mercado.
+   */
+  preMarketChangePct?: number
 }
 
 /**
@@ -109,6 +116,8 @@ export function usePortfolioRows(): { rows: PortfolioRow[]; isLoading: boolean }
               priceFetchedAt: price.fetchedAt,
               dayChangePct,
               dayChangeEur,
+              preMarketChangePct:
+                dayChangePct === undefined && price.isTodaySession === false ? price.preMarketChangePct : undefined,
             }
           } catch (err) {
             return { ...base, priceError: err instanceof Error ? err.message : String(err) }

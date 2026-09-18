@@ -633,6 +633,17 @@
   color: var(--negative);
 }
 
+/* Variación de pre-mercado en "% 24h": mismo matiz que la real, apagado
+   hacia el gris del texto secundario para que se distinga de un cambio de
+   la sesión. */
+.premarket-positive {
+  color: color-mix(in srgb, var(--positive) 45%, var(--text-muted));
+}
+
+.premarket-negative {
+  color: color-mix(in srgb, var(--negative) 45%, var(--text-muted));
+}
+
 .card-hint {
   font-size: 12px;
   color: var(--text-muted);

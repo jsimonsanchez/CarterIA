@@ -58,7 +58,7 @@ function sortValue(row: PortfolioRow, key: SortKey): number | string {
     case 'price':
       return row.currentPriceNative ?? -Infinity
     case 'dayChangePct':
-      return row.dayChangePct ?? -Infinity
+      return row.dayChangePct ?? row.preMarketChangePct ?? -Infinity
     case 'value':
       return row.marketValueEur ?? -Infinity
     case 'pnl':
@@ -315,7 +315,20 @@ function PositionRow({
   // Aparte de `tone`: es la plusvalía sobre el coste, no la variación de
   // hoy, así que puede tener signo contrario un día que el precio baja pero
   // la posición sigue en verde desde que se compró.
-  const dayTone = row.dayChangePct !== undefined ? (row.dayChangePct >= 0 ? 'positive' : 'negative') : ''
+  // Sin variación del día (mercado aún cerrado), la columna muestra la de
+  // pre-mercado si la hay, en tonos apagados: el broker no negocia en esa
+  // franja y no debe confundirse con un cambio real.
+  const dayPct = row.dayChangePct ?? row.preMarketChangePct
+  const dayTone =
+    dayPct === undefined
+      ? ''
+      : row.dayChangePct !== undefined
+        ? dayPct >= 0
+          ? 'positive'
+          : 'negative'
+        : dayPct >= 0
+          ? 'premarket-positive'
+          : 'premarket-negative'
   const isStale = isPriceStale(row.priceFetchedAt)
 
   function renderCell(key: SortKey) {
@@ -385,7 +398,7 @@ function PositionRow({
       case 'dayChangePct':
         return (
           <td key={key} className={`num ${dayTone}`}>
-            {row.dayChangePct !== undefined ? formatPct(row.dayChangePct) : '—'}
+            {dayPct !== undefined ? formatPct(dayPct) : '—'}
           </td>
         )
       case 'value':
