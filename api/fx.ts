@@ -9,16 +9,27 @@ export const config = { runtime: 'edge' }
 export default async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url)
   const from = url.searchParams.get('from')
+  // Con `date` (AAAA-MM-DD) se pide el tipo de ESE día en vez del último: hace
+  // falta para valorar una entrega de acciones al cambio que había entonces,
+  // no al de hoy. El BCE no publica fines de semana ni festivos; frankfurter
+  // devuelve en ese caso el del día hábil anterior, que es justo lo que se
+  // quiere.
+  const date = url.searchParams.get('date')
 
   if (!from) {
     return Response.json({ error: 'Falta el parámetro from' }, { status: 400 })
+  }
+  if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return Response.json({ error: 'El parámetro date debe ser AAAA-MM-DD' }, { status: 400 })
   }
   if (from.toUpperCase() === 'EUR') {
     return Response.json({ rate: 1 })
   }
 
   try {
-    const res = await fetch(`https://api.frankfurter.app/latest?from=${encodeURIComponent(from)}&to=EUR`)
+    const res = await fetch(
+      `https://api.frankfurter.app/${date ?? 'latest'}?from=${encodeURIComponent(from)}&to=EUR`,
+    )
     if (!res.ok) {
       return Response.json({ error: `frankfurter.app respondió ${res.status}` }, { status: 502 })
     }

@@ -6,7 +6,7 @@ import { formatDate, formatEur, formatQuantity, formatPct } from '../utils/forma
 import { InfoPopover } from './InfoPopover'
 
 /** Nombre corto de cada bróker, igual que en la tabla de posiciones. */
-const BROKER_LABELS: Record<string, string> = { xtb: 'XTB', ibkr: 'IBKR' }
+const BROKER_LABELS: Record<string, string> = { xtb: 'XTB', ibkr: 'IBKR', jpm: 'JPM' }
 
 const TYPE_LABELS: Record<string, string> = {
   buy: 'Compra',

@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Broker } from '../domain/types'
-import { clearBrokerData, importIbkrFiles, importXtbFile, type ImportSummary } from '../services/importPortfolio'
+import {
+  clearBrokerData,
+  importIbkrFiles,
+  importJpmFile,
+  importXtbFile,
+  type ImportSummary,
+} from '../services/importPortfolio'
 
 type ImportStatus = 'idle' | 'loading' | 'done' | 'error'
 
@@ -16,6 +22,7 @@ const BROKER_FILES: Record<Broker, { label: string; accept: string; multiple: bo
   // con los nombres largos los tres botones no caben en una fila.
   xtb: { label: 'XTB', accept: '.xlsx', multiple: false },
   ibkr: { label: 'IBKR', accept: '.xml', multiple: true },
+  jpm: { label: 'JPM', accept: '.csv', multiple: false },
 }
 
 /** Estado + lógica de importación, compartidos entre el botón (junto a las pestañas) y el panel de resultado (debajo). */
@@ -72,7 +79,12 @@ export function useXtbImport() {
     setError(null)
     try {
       await clearingRef.current
-      const result = broker === 'ibkr' ? await importIbkrFiles(files) : await importXtbFile(files[0])
+      const result =
+        broker === 'ibkr'
+          ? await importIbkrFiles(files)
+          : broker === 'jpm'
+            ? await importJpmFile(files[0])
+            : await importXtbFile(files[0])
       setSummary(result)
       setStatus('done')
     } catch (err) {
@@ -160,6 +172,9 @@ export function ImportButton({ state }: { state: XtbImportState }) {
           </button>
           <button type="button" className="button button-sm" onClick={() => confirmImport('ibkr')}>
             {BROKER_FILES.ibkr.label}
+          </button>
+          <button type="button" className="button button-sm" onClick={() => confirmImport('jpm')}>
+            {BROKER_FILES.jpm.label}
           </button>
         </div>
       </div>

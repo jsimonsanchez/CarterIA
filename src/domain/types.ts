@@ -1,5 +1,5 @@
 /** Bróker del que proceden unos datos. Cada importación solo toca los suyos. */
-export type Broker = 'xtb' | 'ibkr'
+export type Broker = 'xtb' | 'ibkr' | 'jpm'
 
 export type OperationType = 'buy' | 'sell' | 'dividend' | 'fee' | 'interest' | 'deposit' | 'other'
 

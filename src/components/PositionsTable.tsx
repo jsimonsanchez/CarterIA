@@ -77,7 +77,7 @@ interface PositionsTableProps {
 }
 
 /** Nombre corto de cada bróker, para la etiqueta de la tabla. */
-const BROKER_LABELS: Record<string, string> = { xtb: 'XTB', ibkr: 'IBKR' }
+const BROKER_LABELS: Record<string, string> = { xtb: 'XTB', ibkr: 'IBKR', jpm: 'JPM' }
 
 export function PositionsTable({ rows, isLoading, onRefresh, refreshing, refreshError }: PositionsTableProps) {
   const [expanded, setExpanded] = useState<string | null>(null)

@@ -102,6 +102,47 @@ export async function importXtbFile(file: File): Promise<ImportSummary> {
 }
 
 /**
+ * Importa el extracto de acciones de empresa de J.P. Morgan (.csv).
+ *
+ * El coste de cada entrega se convierte a euros con el cambio oficial del
+ * día en que se entregó, no con el de hoy: es lo que costaron de verdad, y
+ * el criterio con el que tributan.
+ */
+export async function importJpmFile(file: File): Promise<ImportSummary> {
+  const [{ parseJpmStatement, jpmTransactions }, { convertToEurAt }] = await Promise.all([
+    import('../import/jpmImporter'),
+    import('../prices/fx'),
+  ])
+
+  const statement = parseJpmStatement(await file.text())
+
+  const costEurByCertificate = new Map<string, number>()
+  await Promise.all(
+    statement.holdings.map(async (holding) => {
+      const costEur = await convertToEurAt(holding.fmv * holding.quantity, holding.fmvCurrency, holding.issuanceDate)
+      costEurByCertificate.set(holding.certificate, costEur)
+    }),
+  )
+
+  const transactions = jpmTransactions(statement, costEurByCertificate)
+  await db.transactions.bulkPut(transactions)
+  // El extracto no dice en qué bolsa cotiza: se resuelve por la regla de
+  // sufijo, igual que un ticker de XTB del mismo mercado.
+  const { unresolved } = await ensureSymbolMappings([statement.symbol])
+
+  const positionCount = await db.transaction('rw', db.transactions, db.positions, recomputePositions)
+
+  return {
+    imported: transactions.length,
+    skippedRows: statement.skippedRows,
+    warnings: statement.warnings,
+    positions: positionCount,
+    closedTrades: 0,
+    unresolvedSymbols: unresolved,
+  }
+}
+
+/**
  * Importa uno o varios informes Flex de IBKR (.xml). Se admiten varios de
  * golpe porque IBKR no deja pedir más de un año por informe: el histórico
  * completo son varios ficheros, y cargarlos de uno en uno borraría el

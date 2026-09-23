@@ -99,10 +99,46 @@ export async function convertToEur(amount: number, currency: string): Promise<nu
   return amount * rate
 }
 
+/**
+ * Tipos de cambio de fechas pasadas. Van en su propia caché de memoria y sin
+ * caducidad: el cambio de un día ya cerrado no cambia nunca. No se guardan en
+ * localStorage porque solo se consultan al importar, no en cada visita.
+ */
+const historicRates = new Map<string, Promise<number>>()
+
+/** Convierte un importe al cambio oficial (BCE) de una fecha concreta. */
+export async function convertToEurAt(amount: number, currency: string, isoDate: string): Promise<number> {
+  const cur = currency.trim().toUpperCase()
+  if (cur === 'EUR') return amount
+
+  const day = isoDate.slice(0, 10)
+  const key = `${cur}|${day}`
+  let rate = historicRates.get(key)
+  if (!rate) {
+    rate = fetch(`/api/fx?from=${encodeURIComponent(cur)}&date=${day}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`No se pudo obtener el tipo de cambio ${cur}->EUR del ${day}`)
+        const data = (await res.json()) as { rate?: unknown }
+        if (typeof data.rate !== 'number') throw new Error(`Respuesta de tipo de cambio inesperada para ${cur}`)
+        return data.rate
+      })
+      // Una promesa fallida cacheada condenaría a fallar a todos los
+      // intentos posteriores: se olvida para que reintentar sirva de algo.
+      .catch((err) => {
+        historicRates.delete(key)
+        throw err
+      })
+    historicRates.set(key, rate)
+  }
+
+  return amount * (await rate)
+}
+
 /** Vacía la caché. Solo para las pruebas: cada una parte de cero. */
 export function resetFxCacheForTests(): void {
   cache = null
   inFlight.clear()
+  historicRates.clear()
   try {
     localStorage.removeItem(STORAGE_KEY)
   } catch {
