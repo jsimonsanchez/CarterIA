@@ -54,8 +54,7 @@ function App() {
               Cartera
             </button>
             <button className={`tab ${tab === 'realizado' ? 'active' : ''}`} onClick={() => setTab('realizado')}>
-              <span className="tab-label-long">Posiciones cerradas</span>
-              <span className="tab-label-short">Cerradas</span>
+              Realizado
             </button>
           </div>
           <div className="tabs-right">

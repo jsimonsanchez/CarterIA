@@ -390,16 +390,6 @@
 }
 
 @media (max-width: 640px) {
-  /* "Posiciones cerradas" se partía en dos líneas y descuadraba la fila. */
-  .tab-label-long {
-    display: none;
-  }
-
-  /* Más específico que la regla base, que se declara más abajo. */
-  .tab .tab-label-short {
-    display: inline;
-  }
-
   /* Dos columnas fijas: con el mínimo de 150px de la regla base, a 375px
      solo cabía una y las seis tarjetas ocupaban casi dos pantallas. */
   .movers-grid {
@@ -491,10 +481,6 @@
 
 .tab:hover {
   color: var(--text-h);
-}
-
-.tab-label-short {
-  display: none;
 }
 
 .tab.active {

@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo } from 'react'
 import { db } from '../db/db'
 import { totalReturn } from '../domain/performance'
+import { netDividends } from '../domain/realized'
 import { isPriceStale } from '../domain/priceFreshness'
 import { modifiedDietzAnnualized, xirr } from '../domain/xirr'
 import type { ClosedTrade, Transaction } from '../domain/types'
@@ -47,7 +48,12 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
   // Dividirla entre el coste de las posiciones abiertas daba un porcentaje
   // arbitrario — cuantas menos posiciones abiertas, más inflado — y además
   // no coincidía con el que muestra la pestaña "Posiciones cerradas".
-  const realizedPnl = sum(closedTrades, (t) => t.realizedPnlEur)
+  // Los dividendos cobrados entran aquí, netos de su retención: son dinero
+  // que ya está en la cuenta, igual que la ganancia de una venta. Cuentan
+  // aunque el valor siga en cartera — lo latente es la revalorización del
+  // precio, no un dividendo ya pagado.
+  const dividends = netDividends(transactions)
+  const realizedPnl = sum(closedTrades, (t) => t.realizedPnlEur) + dividends
   const realizedCostBasis = sum(closedTrades, (t) => t.purchaseValueEur)
   const realizedPct = realizedCostBasis > 0 ? (realizedPnl / realizedCostBasis) * 100 : undefined
 
@@ -133,8 +139,9 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
           sub={realizedPct !== undefined ? formatPct(realizedPct) : undefined}
           tone={realizedPnl >= 0 ? 'positive' : 'negative'}
           title={
-            `Lo que ya has vendido: ${plural(closedTrades.length, 'operación cerrada', 'operaciones cerradas')}, ` +
-            `de ${formatEur(realizedCostBasis, hidden)} de coste a ${formatEur(realizedCostBasis + realizedPnl, hidden)} de venta.`
+            `Lo que ya has cobrado: ${plural(closedTrades.length, 'operación cerrada', 'operaciones cerradas')} ` +
+            `de ${formatEur(realizedCostBasis, hidden)} de coste, más ${formatEur(dividends, hidden)} de dividendos ` +
+            'netos de retención. El porcentaje va sobre el coste de lo vendido.'
           }
         />
         <Stat

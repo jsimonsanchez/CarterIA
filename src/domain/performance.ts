@@ -1,3 +1,4 @@
+import type { CashFlow } from './xirr'
 import { annualizedReturn } from './xirr'
 
 /** Lo mínimo que hace falta de una operación cerrada para anualizarla. */
@@ -18,15 +19,23 @@ interface TradeFlow {
  * tiempo estuvo invertido cada importe. Con los flujos y sus fechas, un
  * acierto grande y rápido pesa lo que le corresponde.
  *
+ * Los dividendos cobrados de ese valor entran como un flujo más, en su
+ * fecha: son parte del rendimiento que dio el dinero invertido, igual que la
+ * venta.
+ *
  * `undefined` cuando el recorrido entre la primera compra y la última venta
- * es demasiado corto para anualizar sin dar una cifra absurda.
+ * es demasiado corto para anualizar sin dar una cifra absurda, o cuando no
+ * hay ninguna compra que anualizar (un valor que ese año solo repartió
+ * dividendos y sigue en cartera).
  */
-export function annualizedReturnOfTrades(trades: TradeFlow[]): number | undefined {
+export function annualizedReturnOfTrades(trades: TradeFlow[], dividends: CashFlow[] = []): number | undefined {
+  if (trades.length === 0) return undefined
+
   const flows = trades.flatMap((t) => [
     { date: new Date(t.openDate), amount: -t.purchaseValueEur },
     { date: new Date(t.closeDate), amount: t.saleValueEur },
   ])
-  return annualizedReturn(flows)
+  return annualizedReturn([...flows, ...dividends])
 }
 
 /**

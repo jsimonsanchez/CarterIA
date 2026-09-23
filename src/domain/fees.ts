@@ -5,11 +5,26 @@
  * no permite separarlas al informar.
  */
 const TAX_LABELS = new Set([
-  'Withholding tax', // retención en origen sobre dividendos
+  'Withholding tax', // retención en origen sobre dividendos (XTB)
   'Stamp duty', // impuesto sobre transacciones (Reino Unido)
   'Tax IFTT', // impuesto sobre transacciones financieras
   'Free funds interest tax', // retención sobre los intereses del efectivo
+  'FRTAX', // retención en origen sobre dividendos (IBKR)
+  'STAX', // IVA sobre las comisiones del bróker (IBKR)
 ])
+
+/**
+ * Etiquetas de una retención sobre un dividendo, que es lo único que se resta
+ * al dividendo para dejarlo neto. Los demás impuestos de la lista de arriba
+ * no salen del dividendo: gravan la compraventa (stamp duty, IFTT), los
+ * intereses de la caja o las comisiones del bróker.
+ */
+const DIVIDEND_WITHHOLDING_LABELS = new Set(['Withholding tax', 'FRTAX'])
+
+/** ¿Es la retención practicada sobre un dividendo? — ver `isTaxFee`. */
+export function isDividendWithholding(rawDescription: string): boolean {
+  return DIVIDEND_WITHHOLDING_LABELS.has(rawDescription.split(' — ')[0])
+}
 
 /**
  * Distingue impuestos de comisiones a partir de la etiqueta original de
