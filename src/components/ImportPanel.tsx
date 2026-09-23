@@ -12,8 +12,10 @@ const FEEDBACK_TIMEOUT_MS = 60_000
  * completo son varios ficheros y hay que cargarlos de una vez.
  */
 const BROKER_FILES: Record<Broker, { label: string; accept: string; multiple: boolean }> = {
-  xtb: { label: 'Extracto de XTB', accept: '.xlsx', multiple: false },
-  ibkr: { label: 'Informe de IBKR', accept: '.xml', multiple: true },
+  // Etiquetas cortas: el texto del diálogo ya dice que se elige extracto, y
+  // con los nombres largos los tres botones no caben en una fila.
+  xtb: { label: 'XTB', accept: '.xlsx', multiple: false },
+  ibkr: { label: 'IBKR', accept: '.xml', multiple: true },
 }
 
 /** Estado + lógica de importación, compartidos entre el botón (junto a las pestañas) y el panel de resultado (debajo). */
@@ -118,13 +120,7 @@ export function ImportButton({ state }: { state: XtbImportState }) {
   return (
     <>
       <button className="button button-sm" disabled={status === 'loading'} onClick={requestImport}>
-        {status === 'loading' ? (
-          'Importando…'
-        ) : (
-          <>
-            Importar extracto<span className="import-btn-suffix"> de XTB</span>
-          </>
-        )}
+        {status === 'loading' ? 'Importando…' : 'Importar extracto'}
       </button>
       <input
         ref={inputRef}

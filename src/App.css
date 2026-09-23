@@ -319,18 +319,10 @@
 
 .confirm-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 10px;
   margin-top: 6px;
-}
-
-@media (max-width: 640px) {
-  /* Los tres botones no caben en una fila de 375px: se apilan, con las dos
-     opciones de importar arriba y "Cancelar" al final. */
-  .confirm-actions {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
 }
 
 /* Botón de cierre explícito: en táctil no hay forma de "salirse" de algo
@@ -398,10 +390,6 @@
 }
 
 @media (max-width: 640px) {
-  .import-btn-suffix {
-    display: none;
-  }
-
   /* "Posiciones cerradas" se partía en dos líneas y descuadraba la fila. */
   .tab-label-long {
     display: none;
