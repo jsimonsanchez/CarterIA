@@ -1,9 +1,15 @@
+/** Bróker del que proceden unos datos. Cada importación solo toca los suyos. */
+export type Broker = 'xtb' | 'ibkr'
+
 export type OperationType = 'buy' | 'sell' | 'dividend' | 'fee' | 'interest' | 'deposit' | 'other'
 
 /** Una línea de movimiento importada del extracto de XTB, ya normalizada. */
 export interface Transaction {
   /** Hash estable de los campos originales de la línea, usado como PK para deduplicar reimportaciones. */
   id: string
+  broker: Broker
+  /** ISIN del instrumento, cuando el extracto lo trae (IBKR sí, XTB no). */
+  isin?: string
   date: string // ISO 8601
   type: OperationType
   symbol: string
@@ -23,6 +29,8 @@ export interface Transaction {
 /** Posición agregada por símbolo, recalculada a partir de las transacciones. */
 export interface Position {
   symbol: string
+  /** Brókers que aportan a esta posición: una misma posición puede venir de varios. */
+  brokers: Broker[]
   quantity: number
   averageCost: number
   currency: string
@@ -56,6 +64,7 @@ export interface PriceCacheEntry {
 export interface ClosedTrade {
   /** Hash estable (positionId + fecha de cierre + cantidad + precio de cierre), usado como PK para deduplicar reimportaciones. */
   id: string
+  broker: Broker
   symbol: string
   name?: string
   quantity: number
@@ -71,7 +80,13 @@ export interface ClosedTrade {
 
 /** Tabla de equivalencias manual entre el símbolo de XTB y los tickers de cada proveedor de precios. */
 export interface SymbolMapping {
-  /** Símbolo tal cual aparece en el extracto de XTB (clave). */
+  /**
+   * Símbolo canónico del instrumento dentro de la app (clave). Para XTB es
+   * su propio ticker; para IBKR se deriva del suyo y de la bolsa en la que
+   * cotiza, con el mismo formato BASE.MERCADO — así el mismo valor en los
+   * dos brókers cae en la misma posición. El nombre del campo viene de
+   * cuando XTB era el único origen.
+   */
   xtbSymbol: string
   twelveDataSymbol: string
   /** Exchange que espera Twelve Data en el parámetro `exchange` (undefined para mercado de EEUU). */

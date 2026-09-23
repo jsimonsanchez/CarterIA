@@ -131,6 +131,7 @@ export async function parseXtbWorkbook(buffer: ArrayBuffer): Promise<XtbImportRe
 
       transactions.push({
         id,
+        broker: 'xtb',
         date,
         type,
         symbol: ticker || instrument,

@@ -1,11 +1,14 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { db } from '../db/db'
+import type { Broker } from '../domain/types'
 import { convertToEur } from '../prices/fx'
 import { getPrices } from '../prices/priceRepository'
 
 export interface PortfolioRow {
   symbol: string
+  /** Brókers que aportan a la posición: una misma posición puede venir de varios. */
+  brokers: Broker[]
   name?: string
   /** Columna "Category" del extracto de XTB (p.ej. "STOCK", "ETF") — ver `categoryLabel`. */
   category?: string
@@ -64,6 +67,7 @@ export function usePortfolioRows(): { rows: PortfolioRow[]; isLoading: boolean }
 
     const baseRow = (pos: (typeof positions)[number]): PortfolioRow => ({
       symbol: pos.symbol,
+      brokers: pos.brokers ?? [],
       name: mappingBySymbol.get(pos.symbol)?.name,
       category: pos.category,
       quantity: pos.quantity,

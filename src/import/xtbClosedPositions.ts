@@ -80,6 +80,7 @@ export async function parseXtbClosedPositions(buffer: ArrayBuffer): Promise<Clos
 
     trades.push({
       id,
+      broker: 'xtb',
       symbol: ticker,
       name: String(row.getCell(idx.instrument).value ?? '').trim() || undefined,
       quantity: volume,

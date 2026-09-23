@@ -16,7 +16,12 @@ export function ReportsPanel() {
 
   const feeTransactions = transactions.filter((t) => t.type === 'fee')
   const taxes = sumAmount(feeTransactions.filter((t) => isTaxFee(t.rawDescription)))
-  const commissions = sumAmount(feeTransactions.filter((t) => !isTaxFee(t.rawDescription)))
+  // XTB factura la comisión como un movimiento de caja aparte; IBKR la mete
+  // dentro de la propia compra (campo `commission`). Se suman las dos formas
+  // para que el informe no se deje fuera las de un bróker.
+  const commissions =
+    sumAmount(feeTransactions.filter((t) => !isTaxFee(t.rawDescription))) -
+    transactions.reduce((acc, t) => acc + t.commission, 0)
 
   return (
     <section className="panel">

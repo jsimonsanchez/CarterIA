@@ -1,4 +1,4 @@
-import type { Position, Transaction } from './types'
+import type { Broker, Position, Transaction } from './types'
 
 /**
  * Recalcula las posiciones agregadas a partir del histórico completo de transacciones,
@@ -19,6 +19,7 @@ export function computePositions(transactions: Transaction[]): Position[] {
   for (const [symbol, txs] of bySymbol) {
     txs.sort((a, b) => a.date.localeCompare(b.date))
 
+    const brokers = new Set<Broker>()
     let quantity = 0
     let totalCost = 0
     let currency = txs[0]?.currency ?? ''
@@ -30,6 +31,7 @@ export function computePositions(transactions: Transaction[]): Position[] {
     }
 
     for (const tx of txs) {
+      brokers.add(tx.broker)
       if (tx.type === 'buy') {
         quantity += tx.quantity
         totalCost += tx.quantity * tx.price + tx.commission
@@ -45,6 +47,7 @@ export function computePositions(transactions: Transaction[]): Position[] {
     if (quantity > 1e-9) {
       positions.push({
         symbol,
+        brokers: [...brokers].sort(),
         quantity,
         averageCost: totalCost / quantity,
         currency,

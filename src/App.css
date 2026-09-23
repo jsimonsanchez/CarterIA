@@ -324,6 +324,15 @@
   margin-top: 6px;
 }
 
+@media (max-width: 640px) {
+  /* Los tres botones no caben en una fila de 375px: se apilan, con las dos
+     opciones de importar arriba y "Cancelar" al final. */
+  .confirm-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
+
 /* Botón de cierre explícito: en táctil no hay forma de "salirse" de algo
    como con el ratón, así que conviene que se vea cómo cerrarlo. */
 .info-close {
@@ -844,6 +853,20 @@
   border: 1px solid var(--border);
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+/* Misma forma que la categoría, en gris: dice de dónde viene la posición,
+   no qué es. Solo aparece con más de un bróker en la cartera. */
+.broker-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  background: var(--surface-hover);
 }
 
 .symbol-name {

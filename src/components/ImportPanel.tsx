@@ -1,9 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
-import { clearPortfolio, importXtbFile, type ImportSummary } from '../services/importPortfolio'
+import type { Broker } from '../domain/types'
+import { clearBrokerData, importIbkrFiles, importXtbFile, type ImportSummary } from '../services/importPortfolio'
 
 type ImportStatus = 'idle' | 'loading' | 'done' | 'error'
 
 const FEEDBACK_TIMEOUT_MS = 60_000
+
+/**
+ * Qué acepta el selector de fichero de cada bróker. IBKR admite varios
+ * porque sus informes no pueden abarcar más de un año: el histórico
+ * completo son varios ficheros y hay que cargarlos de una vez.
+ */
+const BROKER_FILES: Record<Broker, { label: string; accept: string; multiple: boolean }> = {
+  xtb: { label: 'Extracto de XTB', accept: '.xlsx', multiple: false },
+  ibkr: { label: 'Informe de IBKR', accept: '.xml', multiple: true },
+}
 
 /** Estado + lógica de importación, compartidos entre el botón (junto a las pestañas) y el panel de resultado (debajo). */
 export function useXtbImport() {
@@ -13,6 +24,7 @@ export function useXtbImport() {
   // de escribir: si no, un borrado todavía en curso podría llevarse por
   // delante los movimientos recién importados.
   const clearingRef = useRef<Promise<void>>(Promise.resolve())
+  const [broker, setBroker] = useState<Broker>('xtb')
   const [status, setStatus] = useState<ImportStatus>('idle')
   const [summary, setSummary] = useState<ImportSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -25,7 +37,7 @@ export function useXtbImport() {
     return () => clearTimeout(timer)
   }, [status])
 
-  /** Al pulsar "Importar extracto": pide confirmación antes de borrar nada. */
+  /** Al pulsar "Importar extracto": pide confirmación y bróker antes de borrar nada. */
   function requestImport() {
     confirmRef.current?.showPopover()
   }
@@ -35,27 +47,30 @@ export function useXtbImport() {
   }
 
   /**
-   * Confirmado: borra la cartera y abre el selector de fichero. El borrado
-   * ocurre aunque luego no se elija ningún fichero — es lo que se acaba de
-   * confirmar en el diálogo.
+   * Confirmado: borra los datos de ESE bróker y abre el selector de fichero.
+   * El borrado ocurre aunque luego no se elija ningún fichero — es lo que se
+   * acaba de confirmar en el diálogo. Lo del otro bróker no se toca.
    *
    * El selector se abre sin esperar al borrado a propósito: los navegadores
    * solo dejan abrirlo dentro del mismo gesto del usuario, y un `await`
    * previo puede hacer que lo bloqueen (Safari sobre todo).
    */
-  function confirmImport() {
+  function confirmImport(next: Broker) {
     confirmRef.current?.hidePopover()
-    clearingRef.current = clearPortfolio()
+    setBroker(next)
+    clearingRef.current = clearBrokerData(next)
     setStatus('idle')
-    inputRef.current?.click()
+    // El input cambia de `accept`/`multiple` según el bróker: se abre en el
+    // siguiente ciclo, ya rerenderizado, pero dentro del mismo gesto.
+    queueMicrotask(() => inputRef.current?.click())
   }
 
-  async function handleFile(file: File) {
+  async function handleFiles(files: File[]) {
     setStatus('loading')
     setError(null)
     try {
       await clearingRef.current
-      const result = await importXtbFile(file)
+      const result = broker === 'ibkr' ? await importIbkrFiles(files) : await importXtbFile(files[0])
       setSummary(result)
       setStatus('done')
     } catch (err) {
@@ -66,14 +81,15 @@ export function useXtbImport() {
     }
   }
 
-  return { inputRef, confirmRef, status, summary, error, handleFile, requestImport, cancelImport, confirmImport }
+  return { inputRef, confirmRef, broker, status, summary, error, handleFiles, requestImport, cancelImport, confirmImport }
 }
 
 type XtbImportState = ReturnType<typeof useXtbImport>
 
 export function ImportButton({ state }: { state: XtbImportState }) {
-  const { inputRef, confirmRef, status, handleFile, requestImport, cancelImport, confirmImport } = state
+  const { inputRef, confirmRef, broker, status, handleFiles, requestImport, cancelImport, confirmImport } = state
   const [open, setOpen] = useState(false)
+  const fileConfig = BROKER_FILES[broker]
 
   // Mismo patrón que InfoPopover: cerrar al tocar fuera o con Escape. El modo
   // manual no lo trae de serie.
@@ -113,11 +129,12 @@ export function ImportButton({ state }: { state: XtbImportState }) {
       <input
         ref={inputRef}
         type="file"
-        accept=".xlsx"
+        accept={fileConfig.accept}
+        multiple={fileConfig.multiple}
         hidden
         onChange={(e) => {
-          const file = e.target.files?.[0]
-          if (file) void handleFile(file)
+          const files = [...(e.target.files ?? [])]
+          if (files.length > 0) void handleFiles(files)
         }}
       />
       <div
@@ -135,15 +152,18 @@ export function ImportButton({ state }: { state: XtbImportState }) {
           </button>
         </div>
         <span>
-          Se borrarán las posiciones, movimientos y operaciones cerradas actuales antes de importar el extracto
-          nuevo. ¿Continuar?
+          Elige qué extracto vas a importar. Se borrarán los movimientos y las operaciones cerradas de ESE bróker
+          antes de cargar el fichero nuevo; lo del otro se queda como está.
         </span>
         <div className="confirm-actions">
           <button type="button" className="button button-sm button-ghost" onClick={cancelImport}>
             Cancelar
           </button>
-          <button type="button" className="button button-sm" onClick={confirmImport}>
-            Borrar e importar
+          <button type="button" className="button button-sm" onClick={() => confirmImport('xtb')}>
+            {BROKER_FILES.xtb.label}
+          </button>
+          <button type="button" className="button button-sm" onClick={() => confirmImport('ibkr')}>
+            {BROKER_FILES.ibkr.label}
           </button>
         </div>
       </div>

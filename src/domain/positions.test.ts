@@ -6,6 +6,7 @@ import type { Transaction } from './types'
 /** Transacción con los campos que no afectan al cálculo ya rellenos. */
 function tx(partial: Partial<Transaction> & Pick<Transaction, 'id' | 'date' | 'type' | 'symbol'>): Transaction {
   return {
+    broker: 'xtb',
     quantity: 0,
     price: 0,
     currency: 'EUR',
@@ -18,6 +19,18 @@ function tx(partial: Partial<Transaction> & Pick<Transaction, 'id' | 'date' | 't
 }
 
 describe('computePositions', () => {
+  it('funde en una sola posición el mismo valor comprado en dos brókers', () => {
+    const positions = computePositions([
+      tx({ id: '1', date: '2024-01-01', type: 'buy', symbol: 'AAPL.US', quantity: 10, price: 100, broker: 'xtb' }),
+      tx({ id: '2', date: '2024-06-01', type: 'buy', symbol: 'AAPL.US', quantity: 10, price: 200, broker: 'ibkr' }),
+    ])
+
+    assert.equal(positions.length, 1)
+    assert.equal(positions[0].quantity, 20)
+    assert.equal(positions[0].averageCost, 150)
+    assert.deepEqual(positions[0].brokers, ['ibkr', 'xtb'])
+  })
+
   it('calcula el coste medio ponderado de varias compras a precios distintos', () => {
     const positions = computePositions([
       tx({ id: '1', date: '2024-01-01', type: 'buy', symbol: 'AAPL.US', quantity: 10, price: 100 }),

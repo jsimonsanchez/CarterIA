@@ -76,6 +76,9 @@ interface PositionsTableProps {
   refreshError: string | null
 }
 
+/** Nombre corto de cada bróker, para la etiqueta de la tabla. */
+const BROKER_LABELS: Record<string, string> = { xtb: 'XTB', ibkr: 'IBKR' }
+
 export function PositionsTable({ rows, isLoading, onRefresh, refreshing, refreshError }: PositionsTableProps) {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('value')
@@ -107,7 +110,7 @@ export function PositionsTable({ rows, isLoading, onRefresh, refreshing, refresh
     return isLoading ? (
       <p className="empty-state">Cargando tu cartera…</p>
     ) : (
-      <p className="empty-state">Sin posiciones — importa un extracto de XTB para empezar.</p>
+      <p className="empty-state">Sin posiciones — importa un extracto de XTB o un informe de IBKR para empezar.</p>
     )
   }
 
@@ -214,6 +217,8 @@ export function PositionsTable({ rows, isLoading, onRefresh, refreshing, refresh
   }
 
   const orderedColumns = columnOrder.map((key) => COLUMN_BY_KEY.get(key)!)
+  // Con un solo bróker la etiqueta no distingue nada y solo mete ruido.
+  const showBrokers = new Set(rows.flatMap((r) => r.brokers)).size > 1
 
   return (
     // Dos hijos exactamente —barra y contenido— porque la columna se acopla
@@ -276,6 +281,7 @@ export function PositionsTable({ rows, isLoading, onRefresh, refreshing, refresh
                 <PositionRow
                   key={row.symbol}
                   row={row}
+                  showBrokers={showBrokers}
                   order={columnOrder}
                   logo={logos[row.symbol]}
                   priceDecimals={priceDecimals}
@@ -295,6 +301,7 @@ export function PositionsTable({ rows, isLoading, onRefresh, refreshing, refresh
 
 function PositionRow({
   row,
+  showBrokers,
   order,
   logo,
   priceDecimals,
@@ -303,6 +310,7 @@ function PositionRow({
   onToggle,
 }: {
   row: PortfolioRow
+  showBrokers: boolean
   order: SortKey[]
   logo?: string | null
   priceDecimals: number
@@ -344,6 +352,12 @@ function PositionRow({
                     versión: se omite en vez de anunciar "Sin categoría" en
                     cada fila, hasta que se reimporte el extracto. */}
                 {row.category && <span className="category-badge">{categoryLabel(row.category)}</span>}
+                {showBrokers &&
+                  row.brokers.map((broker) => (
+                    <span key={broker} className="broker-badge">
+                      {BROKER_LABELS[broker] ?? broker}
+                    </span>
+                  ))}
               </span>
               {row.name && (
                 <span className="symbol-name" title={row.name}>
