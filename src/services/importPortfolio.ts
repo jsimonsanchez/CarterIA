@@ -185,7 +185,10 @@ export async function importIbkrFiles(files: File[]): Promise<ImportSummary> {
   }
 
   return {
-    imported: transactions.length,
+    // Movimientos distintos, no líneas leídas: al cargar varios informes sus
+    // rangos pueden solaparse y traer el mismo movimiento repetido, que se
+    // guarda una sola vez.
+    imported: new Set(transactions.map((t) => t.id)).size,
     skippedRows: results.flatMap((r) => r.skippedRows),
     warnings,
     positions: positionCount,

@@ -119,6 +119,25 @@ describe('parseIbkrFlexReport', () => {
     ])
   })
 
+  it('da el mismo identificador a un movimiento sin transactionID que llega en dos informes solapados', () => {
+    // Los informes de IBKR abarcan como mucho un año, así que el histórico
+    // son varios ficheros cuyos rangos pueden solaparse. Si el id dependiera
+    // de la posición en el fichero, el movimiento entraría dos veces y su
+    // importe contaría doble en la caja.
+    const sinId = DEPOSIT.replace(' transactionID="1"', '').replace('/>', 'balance="1700" />')
+    const otraLinea =
+      '<StatementOfFundsLine currency="EUR" activityCode="OFEE" activityDescription="Market data" date="20250808" amount="-0.03" tradeQuantity="0" tradeGross="0" tradeCommission="0" balance="1699.97" levelOfDetail="BaseCurrency" />'
+
+    const primero = parseIbkrFlexReport(report({ lines: [sinId, otraLinea].join('\n') }))
+    const segundo = parseIbkrFlexReport(report({ lines: [otraLinea, sinId].join('\n') }))
+
+    assert.deepEqual(
+      primero.transactions.map((t) => t.id).sort(),
+      segundo.transactions.map((t) => t.id).sort(),
+    )
+    assert.equal(new Set(primero.transactions.map((t) => t.id)).size, 2)
+  })
+
   it('rechaza una cuenta que no esté en euros', () => {
     assert.throws(() => parseIbkrFlexReport(report({ currency: 'USD', lines: DEPOSIT })), /USD/)
   })

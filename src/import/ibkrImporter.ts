@@ -218,7 +218,14 @@ export function parseIbkrFlexReport(xml: string): IbkrImportResult {
 
   baseLines.forEach((line, index) => {
     const activityCode = line.activityCode ?? ''
-    const id = `ibkr-${line.transactionID || `${line.date}-${activityCode}-${index}`}`
+    // El identificador tiene que salir del contenido de la línea, nunca de su
+    // posición en el fichero: el histórico son varios informes de un año cada
+    // uno y sus rangos pueden solaparse, así que el mismo movimiento llega
+    // dos veces con distinto número de fila. Si el id dependiera de la fila,
+    // se guardaría dos veces y ese importe contaría doble en la caja. El
+    // saldo resultante desempata dos líneas por lo demás idénticas: es
+    // distinto en cada una y el mismo en los dos informes.
+    const id = `ibkr-${line.transactionID || [line.date, activityCode, line.amount, line.symbol, line.balance].join('-')}`
     const date = toIsoDate(line.date ?? line.reportDate ?? '')
     if (!date) {
       skippedRows.push({ row: index + 1, reason: `Línea sin fecha reconocible (${activityCode})` })
