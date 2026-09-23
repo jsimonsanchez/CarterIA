@@ -30,7 +30,7 @@ export function RealizedGainsPanel() {
   const years = buildRealizedYears(trades, transactions)
 
   if (years.length === 0) {
-    return <p className="empty-state">Nada realizado todavía — se rellena al vender o al cobrar un dividendo.</p>
+    return <p className="empty-state">Sin posiciones cerradas todavía — se rellena al vender.</p>
   }
 
   const totalRealized = years.reduce((acc, y) => acc + y.pnl, 0)
@@ -38,7 +38,7 @@ export function RealizedGainsPanel() {
   return (
     <section className="panel">
       <div className="panel-header">
-        <h2>Resultado realizado por año</h2>
+        <h2>Plusvalías realizadas por año</h2>
         <span className={`card-value ${totalRealized >= 0 ? 'positive' : 'negative'}`}>
           {formatEur(totalRealized, hidden)}
         </span>
@@ -153,9 +153,7 @@ function SymbolBreakdown({
                   title={
                     annualizedPct !== undefined
                       ? 'Rentabilidad anualizada de este valor: pondera por importe y por el tiempo que estuvo invertido cada uno, con los dividendos incluidos.'
-                      : entry.trades.length === 0
-                        ? 'Solo dividendos: sin compra ni venta no hay periodo que anualizar'
-                        : `Menos de ${MIN_DAYS_TO_ANNUALIZE} días entre la primera compra y la última venta — no se anualiza`
+                      : `Menos de ${MIN_DAYS_TO_ANNUALIZE} días entre la primera compra y la última venta — no se anualiza`
                   }
                 >
                   {annualizedPct !== undefined ? formatPct(annualizedPct) : '—'}

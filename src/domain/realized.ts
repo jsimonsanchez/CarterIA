@@ -2,9 +2,6 @@ import { isDividendWithholding } from './fees'
 import { annualizedReturnOfTrades } from './performance'
 import type { ClosedTrade, Transaction } from './types'
 
-/** Etiqueta para los dividendos que llegan sin valor asociado, para que no desaparezcan del total. */
-const SIN_VALOR = 'Otros'
-
 /** Un cobro de dividendo o la retención practicada sobre él, tal cual vino del extracto. */
 export interface DividendMovement {
   id: string
@@ -55,19 +52,18 @@ export function netDividends(transactions: Transaction[]): number {
 }
 
 /**
- * Agrupa por año y valor todo lo ya realizado: las ventas cerradas y los
- * dividendos cobrados.
+ * Agrupa por año y valor las posiciones cerradas, con los dividendos que
+ * pagó cada valor en ese mismo año.
  *
- * Los dividendos entran aunque el valor siga en cartera. Un dividendo es
- * dinero que ya está en la cuenta, no una plusvalía latente: dejarlo fuera
- * hacía que el resultado realizado de un valor que reparte mucho pareciera
- * mucho peor de lo que fue. Por eso aquí pueden aparecer valores que todavía
- * se tienen, sin ninguna operación cerrada.
+ * Solo entran valores con alguna venta ese año: una posición cerrada es una
+ * venta, y un valor que solo repartió dividendos no ha cerrado nada. Sus
+ * dividendos siguen contando como realizados en el resumen —son dinero ya
+ * cobrado—, pero no tienen sitio en esta tabla.
  *
- * El porcentaje se calcula sobre el coste de lo vendido, que es el capital
- * que generó esa ganancia. Un valor que ese año solo repartió dividendos no
- * tiene ese coste, así que se queda sin porcentaje en vez de inventar un
- * divisor.
+ * Cada dividendo se asigna al año en que se cobró y a su valor, así que
+ * aparece como mucho una vez: los de un año sin ventas de ese valor
+ * simplemente no salen aquí, en vez de arrastrarse al año de la venta y
+ * acabar contados dos veces.
  */
 export function buildRealizedYears(trades: ClosedTrade[], transactions: Transaction[]): RealizedYear[] {
   const byYear = new Map<number, Map<string, RealizedSymbol>>()
@@ -99,7 +95,10 @@ export function buildRealizedYears(trades: ClosedTrade[], transactions: Transact
   }
 
   for (const tx of transactions.filter(isDividendFlow)) {
-    const entry = symbolEntry(new Date(tx.date).getFullYear(), tx.symbol || SIN_VALOR)
+    // `symbols.get` y no `symbolEntry`: si ese valor no vendió nada ese año
+    // no se le crea fila — el dividendo se queda fuera de la tabla.
+    const entry = byYear.get(new Date(tx.date).getFullYear())?.get(tx.symbol)
+    if (!entry) continue
     entry.dividends.push({
       id: tx.id,
       date: tx.date,

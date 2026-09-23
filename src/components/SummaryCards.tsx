@@ -141,7 +141,8 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
           title={
             `Lo que ya has cobrado: ${plural(closedTrades.length, 'operación cerrada', 'operaciones cerradas')} ` +
             `de ${formatEur(realizedCostBasis, hidden)} de coste, más ${formatEur(dividends, hidden)} de dividendos ` +
-            'netos de retención. El porcentaje va sobre el coste de lo vendido.'
+            'netos de retención — incluidos los de valores que sigues teniendo, que por eso no salen en la pestaña ' +
+            'de posiciones cerradas. El porcentaje va sobre el coste de lo vendido.'
           }
         />
         <Stat

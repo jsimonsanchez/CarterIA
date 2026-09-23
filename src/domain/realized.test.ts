@@ -83,21 +83,34 @@ describe('buildRealizedYears', () => {
     assert.equal(years[0].pnl, 312)
   })
 
-  it('incluye los dividendos de un valor que sigue en cartera, sin porcentaje', () => {
-    const years = buildRealizedYears([], [DIVIDENDO, RETENCION])
-
-    const san = years[0].symbols[0]
-    assert.equal(san.trades.length, 0)
-    assert.equal(san.pnl, 112)
-    // Sin venta no hay coste sobre el que calcular un porcentaje.
-    assert.equal(san.pct, undefined)
-    assert.equal(san.annualizedRate, undefined)
-    assert.equal(years[0].tradeCount, 0)
+  it('deja fuera los dividendos de un valor que no ha vendido nada: no hay posición cerrada', () => {
+    assert.deepEqual(buildRealizedYears([], [DIVIDENDO, RETENCION]), [])
   })
 
-  it('separa por año de cobro, aunque la venta sea de otro año', () => {
+  it('no arrastra al año de la venta los dividendos de años sin venta, que se contarían dos veces', () => {
+    const dividendoAnterior = { ...DIVIDENDO, id: 'd0', date: '2024-05-12T00:00:00.000Z', total: 100 }
     const years = buildRealizedYears(
-      [trade({ id: 't1', symbol: 'SAN.ES', closeDate: '2026-02-01T00:00:00.000Z' })],
+      [trade({ id: 't1', symbol: 'SAN.ES', closeDate: '2025-09-01T00:00:00.000Z', purchaseValueEur: 1000, saleValueEur: 1200 })],
+      [dividendoAnterior, DIVIDENDO, RETENCION],
+    )
+
+    // Solo 2025 tiene venta: el dividendo de 2024 no aparece por ningún lado.
+    assert.deepEqual(
+      years.map((y) => y.year),
+      [2025],
+    )
+    assert.equal(years[0].symbols[0].dividendTotal, 112)
+    const ids = years.flatMap((y) => y.symbols.flatMap((s) => s.dividends.map((d) => d.id)))
+    assert.deepEqual(ids, ['d1', 'd2'])
+    assert.equal(new Set(ids).size, ids.length)
+  })
+
+  it('asigna cada dividendo al año en que se cobró, no al de la venta', () => {
+    const years = buildRealizedYears(
+      [
+        trade({ id: 't1', symbol: 'SAN.ES', closeDate: '2025-11-01T00:00:00.000Z' }),
+        trade({ id: 't2', symbol: 'SAN.ES', closeDate: '2026-02-01T00:00:00.000Z' }),
+      ],
       [DIVIDENDO],
     )
 
@@ -105,22 +118,18 @@ describe('buildRealizedYears', () => {
       years.map((y) => [y.year, y.pnl]),
       [
         [2026, 200],
-        [2025, 160],
+        [2025, 360],
       ],
     )
   })
 
   it('no confunde un impuesto de compraventa con la retención de un dividendo', () => {
-    const years = buildRealizedYears([], [DIVIDENDO, IMPUESTO_COMPRAVENTA])
+    const years = buildRealizedYears(
+      [trade({ id: 't1', symbol: 'SAN.ES', closeDate: '2025-09-01T00:00:00.000Z' })],
+      [DIVIDENDO, IMPUESTO_COMPRAVENTA],
+    )
 
     assert.equal(years[0].symbols[0].dividendTotal, 160)
-  })
-
-  it('agrupa bajo "Otros" los dividendos que llegan sin valor asociado', () => {
-    const years = buildRealizedYears([], [tx({ id: 'x', date: '2025-01-01T00:00:00.000Z', type: 'dividend', total: 20 })])
-
-    assert.equal(years[0].symbols[0].symbol, 'Otros')
-    assert.equal(years[0].pnl, 20)
   })
 
   it('el anualizado de un valor tiene en cuenta sus dividendos', () => {
