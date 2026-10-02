@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { categoryLabel } from '../domain/instrumentCategory'
 import { isPriceStale } from '../domain/priceFreshness'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
 import { useLogos } from '../hooks/useLogos'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { usePrivacy } from '../hooks/usePrivacy'
@@ -101,6 +102,7 @@ export function PositionsTable({ rows, isLoading, onRefresh, refreshing, refresh
   const wrapperRef = useRef<HTMLDivElement>(null)
   // Antes del early return: los hooks no pueden llamarse condicionalmente.
   const logos = useLogos(rows.map((r) => r.symbol))
+  const autoRefresh = useAutoRefresh(onRefresh, refreshing)
 
   useEffect(() => {
     try {
@@ -242,6 +244,23 @@ export function PositionsTable({ rows, isLoading, onRefresh, refreshing, refresh
         />
         <button className="button button-sm" onClick={onRefresh} disabled={refreshing}>
           {refreshing ? 'Actualizando…' : 'Actualizar precios'}
+        </button>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={autoRefresh.enabled}
+          className={`switch ${autoRefresh.enabled ? 'on' : ''}`}
+          onClick={autoRefresh.toggle}
+          title={
+            autoRefresh.enabled
+              ? 'Actualización automática activa: los precios se renuevan cada minuto'
+              : 'Actualizar los precios automáticamente cada minuto'
+          }
+        >
+          <span className="switch-track" aria-hidden="true">
+            <span className="switch-thumb" />
+          </span>
+          <span className="switch-label">Auto</span>
         </button>
       </div>
       <div className="positions-column-content">

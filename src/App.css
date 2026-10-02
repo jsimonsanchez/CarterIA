@@ -773,6 +773,84 @@
   border-color: var(--accent);
 }
 
+@media (max-width: 640px) {
+  /* Con el interruptor, buscador + botón + interruptor no caben en una fila
+     de 375px sin dejar el buscador en un hueco: va arriba a todo el ancho y
+     debajo, el botón con el interruptor. */
+  .table-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .table-search {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+}
+
+/* Interruptor de la actualización automática de precios. */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 2px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.switch.on {
+  color: var(--text-h);
+}
+
+.switch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
+
+.switch-track {
+  position: relative;
+  width: 30px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background-color 0.15s ease;
+}
+
+.switch.on .switch-track {
+  background: var(--accent);
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.switch.on .switch-thumb {
+  transform: translateX(12px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch,
+  .switch-track,
+  .switch-thumb {
+    transition: none;
+  }
+}
+
 .positions-table-wrapper {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -981,9 +1059,9 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* Solo lo lleva CategoryPerformanceChart: AllocationChart no necesita
-   título porque el contexto (al lado de la tabla de posiciones) ya deja
-   claro qué representa. Una segunda gráfica apilada debajo sí lo necesita. */
+/* Título de cada gráfica de la barra lateral ("Cartera", "Tipo de
+   instrumento"): son dos tartas apiladas y sin él no se sabe qué reparte cada
+   una. */
 .chart-container-label {
   display: block;
   margin-bottom: 4px;

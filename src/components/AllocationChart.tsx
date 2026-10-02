@@ -24,6 +24,7 @@ export function AllocationChart({ rows }: { rows: PortfolioRow[] }) {
 
   return (
     <div className="chart-container">
+      <span className="card-label chart-container-label">Cartera</span>
       <ResponsiveContainer width="100%" height={130}>
         <PieChart>
           <Pie
