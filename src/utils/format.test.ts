@@ -1,6 +1,22 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { formatNativePrice, formatPct, priceDecimalsFor } from './format'
+import { formatNativePrice, formatPct, formatSignedEur, priceDecimalsFor } from './format'
+
+describe('formatSignedEur', () => {
+  it('antepone el + a las ganancias y deja el - de las pérdidas', () => {
+    assert.match(formatSignedEur(1250), /^\+1\.250,00\s€$/)
+    assert.match(formatSignedEur(-1308), /^-1\.308,00\s€$/)
+  })
+
+  it('no pone signo a un importe que redondea a cero', () => {
+    assert.match(formatSignedEur(0), /^0,00\s€$/)
+    assert.match(formatSignedEur(0.004), /^0,00\s€$/)
+  })
+
+  it('en modo privacidad devuelve el marcador, sin signo', () => {
+    assert.equal(formatSignedEur(1250, true), '••••• €')
+  })
+})
 
 describe('formatNativePrice', () => {
   it('convierte los peniques del Reino Unido a libras', () => {

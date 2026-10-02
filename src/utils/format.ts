@@ -13,6 +13,17 @@ export function formatEur(value: number, hidden = false): string {
   return EUR_FORMAT.format(value)
 }
 
+/**
+ * Importe con el signo siempre explícito: "+1.250,00 €" / "-1.308,00 €". Para
+ * ganancias y pérdidas, donde el "+" deja claro de un vistazo que es una
+ * ganancia (los porcentajes ya lo llevaban). Un importe que redondea a cero no
+ * lleva signo, y en modo privacidad tampoco: sale el marcador de siempre.
+ */
+export function formatSignedEur(value: number, hidden = false): string {
+  const text = formatEur(value, hidden)
+  return !hidden && Math.round(value * 100) > 0 ? `+${text}` : text
+}
+
 // useGrouping 'always': en es-ES los números de 4 cifras van sin separador
 // de miles por defecto, y en una misma columna "8172,00 €" quedaba al lado
 // de "51.358,60 €".

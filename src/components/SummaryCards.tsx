@@ -8,7 +8,7 @@ import { modifiedDietzAnnualized, xirr } from '../domain/xirr'
 import type { ClosedTrade, Transaction } from '../domain/types'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { usePrivacy } from '../hooks/usePrivacy'
-import { formatEur, formatPct } from '../utils/format'
+import { formatEur, formatPct, formatSignedEur } from '../utils/format'
 import { InfoPopover } from './InfoPopover'
 
 // Constantes a nivel de módulo, no literales `[]` en el cuerpo del
@@ -121,7 +121,7 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
         />
         <Stat
           label="Plusvalía Latente"
-          value={formatEur(unrealizedPnl, hidden)}
+          value={formatSignedEur(unrealizedPnl, hidden)}
           sub={unrealizedPct !== undefined ? formatPct(unrealizedPct) : undefined}
           tone={unrealizedPnl >= 0 ? 'positive' : 'negative'}
           title={
@@ -135,7 +135,7 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
         />
         <Stat
           label="Plusvalía"
-          value={formatEur(realizedPnl, hidden)}
+          value={formatSignedEur(realizedPnl, hidden)}
           sub={realizedPct !== undefined ? formatPct(realizedPct) : undefined}
           tone={realizedPnl >= 0 ? 'positive' : 'negative'}
           title={
@@ -147,7 +147,7 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
         />
         <Stat
           label="Total"
-          value={formatEur(total, hidden)}
+          value={formatSignedEur(total, hidden)}
           sub={totalPct !== undefined ? formatPct(totalPct) : undefined}
           tone={total >= 0 ? 'positive' : 'negative'}
           // Lo que la etiqueta ya no dice (que incluye dividendos e

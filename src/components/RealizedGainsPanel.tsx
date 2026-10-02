@@ -6,7 +6,7 @@ import type { ClosedTrade } from '../domain/types'
 import { cagr, MIN_DAYS_TO_ANNUALIZE } from '../domain/xirr'
 import { useLogos } from '../hooks/useLogos'
 import { usePrivacy } from '../hooks/usePrivacy'
-import { formatDate, formatEur, formatPct, formatQuantity } from '../utils/format'
+import { formatDate, formatEur, formatPct, formatQuantity, formatSignedEur } from '../utils/format'
 import { SymbolLogo } from './SymbolLogo'
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24
@@ -40,7 +40,7 @@ export function RealizedGainsPanel() {
       <div className="panel-header">
         <h2>Plusvalías realizadas por año</h2>
         <span className={`card-value ${totalRealized >= 0 ? 'positive' : 'negative'}`}>
-          {formatEur(totalRealized, hidden)}
+          {formatSignedEur(totalRealized, hidden)}
         </span>
       </div>
 
@@ -65,7 +65,7 @@ export function RealizedGainsPanel() {
                       <strong>{year.year}</strong>
                     </td>
                     <td className="num">{year.tradeCount}</td>
-                    <td className={`num ${year.pnl >= 0 ? 'positive' : 'negative'}`}>{formatEur(year.pnl, hidden)}</td>
+                    <td className={`num ${year.pnl >= 0 ? 'positive' : 'negative'}`}>{formatSignedEur(year.pnl, hidden)}</td>
                     <td className={`num ${year.pnl >= 0 ? 'positive' : 'negative'}`}>
                       {year.pct !== undefined ? formatPct(year.pct) : '—'}
                     </td>
@@ -146,7 +146,7 @@ function SymbolBreakdown({
                 <td className="num">{entry.cost > 0 ? formatEur(entry.cost, hidden) : '—'}</td>
                 <td className="num">{entry.sale > 0 ? formatEur(entry.sale, hidden) : '—'}</td>
                 <td className="num">{entry.dividendTotal !== 0 ? formatEur(entry.dividendTotal, hidden) : '—'}</td>
-                <td className={`num ${tone}`}>{formatEur(entry.pnl, hidden)}</td>
+                <td className={`num ${tone}`}>{formatSignedEur(entry.pnl, hidden)}</td>
                 <td className={`num ${tone}`}>{entry.pct !== undefined ? formatPct(entry.pct) : '—'}</td>
                 <td
                   className={`num ${annualizedPct !== undefined ? (annualizedPct >= 0 ? 'positive' : 'negative') : ''}`}
@@ -229,7 +229,7 @@ function TradeRow({ trade, hidden }: { trade: ClosedTrade; hidden: boolean }) {
       <td className="num">{formatQuantity(trade.quantity, hidden)}</td>
       <td className="num">{formatEur(trade.purchaseValueEur, hidden)}</td>
       <td className="num">{formatEur(trade.saleValueEur, hidden)}</td>
-      <td className={`num ${tone}`}>{formatEur(trade.realizedPnlEur, hidden)}</td>
+      <td className={`num ${tone}`}>{formatSignedEur(trade.realizedPnlEur, hidden)}</td>
       <td className={`num ${tone}`}>{pct !== undefined ? formatPct(pct) : '—'}</td>
       <td
         className={`num ${annualizedPct !== undefined ? tone : ''}`}
