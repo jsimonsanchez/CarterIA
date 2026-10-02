@@ -774,16 +774,14 @@
 }
 
 @media (max-width: 640px) {
-  /* Con el interruptor, buscador + botón + interruptor no caben en una fila
-     de 375px sin dejar el buscador en un hueco: va arriba a todo el ancho y
-     debajo, el botón con el interruptor. */
+  /* Buscador, botón e interruptor en una sola fila: el buscador es lo que se
+     encoge, con menos relleno, para que lo demás quepa entero. */
   .table-toolbar {
-    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .table-search {
-    flex: 1 1 100%;
-    max-width: none;
+    padding: 9px 10px;
   }
 }
 

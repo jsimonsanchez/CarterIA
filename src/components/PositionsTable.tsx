@@ -238,7 +238,9 @@ export function PositionsTable({ rows, isLoading, onRefresh, refreshing, refresh
         <input
           className="table-search"
           type="search"
-          placeholder="Buscar por símbolo o nombre…"
+          placeholder="Buscar…"
+          aria-label="Buscar por símbolo o nombre"
+          title="Buscar por símbolo o nombre"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
