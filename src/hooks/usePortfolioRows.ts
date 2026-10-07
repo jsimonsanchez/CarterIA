@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { db } from '../db/db'
 import type { Broker } from '../domain/types'
 import { convertToEur } from '../prices/fx'
@@ -57,13 +57,20 @@ export function usePortfolioRows(): { rows: PortfolioRow[]; isLoading: boolean }
 
   const [rows, setRows] = useState<PortfolioRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  // Ya se ha publicado alguna vez una cartera completa: a partir de ahí, los
+  // recálculos conservan lo que se ve hasta tener el resultado nuevo.
+  const hasPublishedRef = useRef(false)
 
   useEffect(() => {
-    if (!positions) return
+    // Las tres consultas son independientes y llegan en momentos distintos.
+    // Calcular con solo las posiciones —tomando la caché de precios que aún
+    // no ha llegado por vacía— dejaba todas las filas sin precio y
+    // `isLoading` en falso: durante un instante la cartera valía cero.
+    if (!positions || !priceCache || !mappings) return
 
     let cancelled = false
-    const priceBySymbol = new Map((priceCache ?? []).map((p) => [p.symbol, p]))
-    const mappingBySymbol = new Map((mappings ?? []).map((m) => [m.xtbSymbol, m]))
+    const priceBySymbol = new Map(priceCache.map((p) => [p.symbol, p]))
+    const mappingBySymbol = new Map(mappings.map((m) => [m.xtbSymbol, m]))
 
     const baseRow = (pos: (typeof positions)[number]): PortfolioRow => ({
       symbol: pos.symbol,
@@ -75,12 +82,24 @@ export function usePortfolioRows(): { rows: PortfolioRow[]; isLoading: boolean }
       costBasis: pos.quantity * pos.averageCost,
     })
 
-    // Paso 1: sin esperar a nada, para que la tabla se vea ya. Se marca como
-    // "cargando" en CADA recálculo, no solo en el primero: al refrescar
-    // precios las filas vuelven a quedarse sin importes un instante, y sin
-    // esto se anunciaría "sin precio" en valores que sí lo tienen.
-    setIsLoading(true)
-    setRows(positions.map(baseRow))
+    // Paso 1: la primera vez, sin esperar a nada, para que la tabla se vea ya
+    // (y marcada como "cargando", para no anunciar "sin precio" en valores
+    // que aún no han tenido ocasión de tenerlo).
+    //
+    // En los recálculos siguientes —cada actualización de precios, que con la
+    // automática es cada minuto— NO se vuelve a las filas sin importes: se
+    // conservan las anteriores hasta tener las nuevas. Antes la cartera
+    // parpadeaba a "sin precio" en cada actualización, y el resumen con ella.
+    if (positions.length === 0) {
+      setRows([])
+      setIsLoading(false)
+      hasPublishedRef.current = false
+      return
+    }
+    if (!hasPublishedRef.current) {
+      setIsLoading(true)
+      setRows(positions.map(baseRow))
+    }
 
     async function compute() {
       const computed = await Promise.all(
@@ -133,6 +152,7 @@ export function usePortfolioRows(): { rows: PortfolioRow[]; isLoading: boolean }
       if (!cancelled) {
         setRows(computed)
         setIsLoading(false)
+        hasPublishedRef.current = true
       }
     }
 

@@ -40,7 +40,8 @@ interface CategoryStat {
  * franja lateral y no como dos paneles descoordinados.
  */
 export function CategoryPerformanceChart({ rows }: { rows: PortfolioRow[] }) {
-  const transactions = useLiveQuery(() => db.transactions.toArray(), []) ?? NO_TRANSACTIONS
+  const transactionsQuery = useLiveQuery(() => db.transactions.toArray(), [])
+  const transactions = transactionsQuery ?? NO_TRANSACTIONS
   // Mismo cálculo que "Liquidez" en SummaryCards: cada transacción ya trae
   // su importe neto en EUR, así que sumar todo el histórico da la caja
   // disponible sin tener que reconstruirla a partir de las posiciones.
@@ -49,6 +50,11 @@ export function CategoryPerformanceChart({ rows }: { rows: PortfolioRow[] }) {
   const withPrice = rows.filter((r) => r.marketValueEur !== undefined)
   const positionsValue = withPrice.reduce((acc, r) => acc + r.marketValueEur!, 0)
   const totalValue = positionsValue + cashBalance
+
+  // Los pesos se reparten sobre el valor de TODA la cartera: con la caja sin
+  // cargar o algún precio sin llegar, las posiciones que faltan cuentan cero
+  // y la tarta sale con la liquidez (o lo poco que haya) al 100 %.
+  if (!transactionsQuery || withPrice.length !== rows.length) return null
 
   if (totalValue <= 0) return null
 

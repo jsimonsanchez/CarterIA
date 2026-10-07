@@ -4,6 +4,7 @@ import { db } from '../db/db'
 import { totalReturn } from '../domain/performance'
 import { netDividends } from '../domain/realized'
 import { isPriceStale } from '../domain/priceFreshness'
+import { summaryAvailability } from '../domain/summaryAvailability'
 import { modifiedDietzAnnualized, xirr } from '../domain/xirr'
 import type { ClosedTrade, Transaction } from '../domain/types'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
@@ -18,10 +19,15 @@ import { InfoPopover } from './InfoPopover'
 const NO_TRADES: ClosedTrade[] = []
 const NO_TRANSACTIONS: Transaction[] = []
 
-export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
+/** Lo que se enseña en lugar de una cifra que todavía no se puede calcular. */
+const PENDING = '—'
+
+export function SummaryCards({ rows, isLoading }: { rows: PortfolioRow[]; isLoading: boolean }) {
   const { hidden } = usePrivacy()
-  const closedTrades = useLiveQuery(() => db.closedTrades.toArray(), []) ?? NO_TRADES
-  const transactions = useLiveQuery(() => db.transactions.toArray(), []) ?? NO_TRANSACTIONS
+  const closedTradesQuery = useLiveQuery(() => db.closedTrades.toArray(), [])
+  const transactionsQuery = useLiveQuery(() => db.transactions.toArray(), [])
+  const closedTrades = closedTradesQuery ?? NO_TRADES
+  const transactions = transactionsQuery ?? NO_TRANSACTIONS
 
   // Cada transacción ya trae su importe neto en EUR (ingresos +, compras −,
   // ventas +, dividendos +, intereses +, comisiones −), así que sumar todo
@@ -100,7 +106,22 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
     return { xirrPct: rate !== undefined ? rate * 100 : undefined, usedFallback: fallback }
   }, [transactions, marketValue, cashBalance])
 
-  const priceHint = buildPriceHint(missingPrices, stalePrices)
+  const available = summaryAvailability({
+    isLoading,
+    transactionsLoaded: transactionsQuery !== undefined,
+    tradesLoaded: closedTradesQuery !== undefined,
+    positions: rows.length,
+    priced: withPrice.length,
+  })
+
+  // Mientras se carga, "N sin precio" sería falso: los precios no han tenido
+  // ocasión de llegar. Solo se avisa cuando ya se ha mirado y de verdad faltan.
+  const priceHint = isLoading ? undefined : buildPriceHint(missingPrices, stalePrices)
+  const missingPricesReason =
+    missingPrices > 0
+      ? `Faltan los precios de ${plural(missingPrices, 'posición', 'posiciones')}: pulsa "Actualizar precios". ` +
+        'Con ellas valoradas a cero la cifra saldría falsa, así que no se calcula.'
+      : 'Se calculará en cuanto estén cargados los precios de todas las posiciones.'
 
   return (
     <section className="panel summary-panel">
@@ -108,56 +129,66 @@ export function SummaryCards({ rows }: { rows: PortfolioRow[] }) {
         <div className="summary-stat">
           <span className="card-label">Valor Total</span>
           <div className="summary-stat-body">
-            <span className="card-value">{formatEur(portfolioValue, hidden)}</span>
-            <span className="card-sub">Posiciones {formatEur(marketValue, hidden)}</span>
-            <span className="card-sub">Liquidez {formatEur(cashBalance, hidden)}</span>
+            <span className="card-value">{available.valuation ? formatEur(portfolioValue, hidden) : PENDING}</span>
+            <span className="card-sub">
+              Posiciones {available.valuation || available.unrealized ? formatEur(marketValue, hidden) : PENDING}
+            </span>
+            <span className="card-sub">Liquidez {available.liquidity ? formatEur(cashBalance, hidden) : PENDING}</span>
             {priceHint && <span className="card-hint">{priceHint}</span>}
           </div>
         </div>
         <Stat
           label="Coste de la cartera"
-          value={formatEur(costBasis, hidden)}
-          sub={`Posiciones abiertas ${rows.length}`}
+          value={available.cost ? formatEur(costBasis, hidden) : PENDING}
+          sub={available.cost ? `Posiciones abiertas ${rows.length}` : undefined}
         />
         <Stat
           label="Plusvalía Latente"
-          value={formatSignedEur(unrealizedPnl, hidden)}
-          sub={unrealizedPct !== undefined ? formatPct(unrealizedPct) : undefined}
-          tone={unrealizedPnl >= 0 ? 'positive' : 'negative'}
+          value={available.unrealized ? formatSignedEur(unrealizedPnl, hidden) : PENDING}
+          sub={available.unrealized && unrealizedPct !== undefined ? formatPct(unrealizedPct) : undefined}
+          tone={available.unrealized ? (unrealizedPnl >= 0 ? 'positive' : 'negative') : undefined}
           title={
-            `Lo que aún no has vendido: ${plural(withPrice.length, 'posición', 'posiciones')}, ` +
-            `de ${formatEur(pricedCostBasis, hidden)} de coste a ${formatEur(marketValue, hidden)} de valor actual.` +
-            (missingPrices > 0
-              ? ` Queda fuera ${plural(missingPrices, 'posición', 'posiciones')} sin precio` +
-                ` (${formatEur(costBasis - pricedCostBasis, hidden)} de coste).`
-              : '')
+            available.unrealized
+              ? `Lo que aún no has vendido: ${plural(withPrice.length, 'posición', 'posiciones')}, ` +
+                `de ${formatEur(pricedCostBasis, hidden)} de coste a ${formatEur(marketValue, hidden)} de valor actual.` +
+                (missingPrices > 0
+                  ? ` Queda fuera ${plural(missingPrices, 'posición', 'posiciones')} sin precio` +
+                    ` (${formatEur(costBasis - pricedCostBasis, hidden)} de coste).`
+                  : '')
+              : missingPricesReason
           }
         />
         <Stat
           label="Plusvalía"
-          value={formatSignedEur(realizedPnl, hidden)}
-          sub={realizedPct !== undefined ? formatPct(realizedPct) : undefined}
-          tone={realizedPnl >= 0 ? 'positive' : 'negative'}
+          value={available.realized ? formatSignedEur(realizedPnl, hidden) : PENDING}
+          sub={available.realized && realizedPct !== undefined ? formatPct(realizedPct) : undefined}
+          tone={available.realized ? (realizedPnl >= 0 ? 'positive' : 'negative') : undefined}
           title={
-            `Lo que ya has cobrado: ${plural(closedTrades.length, 'operación cerrada', 'operaciones cerradas')} ` +
-            `de ${formatEur(realizedCostBasis, hidden)} de coste, más ${formatEur(dividends, hidden)} de dividendos ` +
-            'netos de retención — incluidos los de valores que sigues teniendo, que por eso no salen en la pestaña ' +
-            'de posiciones cerradas. El porcentaje va sobre el coste de lo vendido.'
+            available.realized
+              ? `Lo que ya has cobrado: ${plural(closedTrades.length, 'operación cerrada', 'operaciones cerradas')} ` +
+                `de ${formatEur(realizedCostBasis, hidden)} de coste, más ${formatEur(dividends, hidden)} de dividendos ` +
+                'netos de retención — incluidos los de valores que sigues teniendo, que por eso no salen en la pestaña ' +
+                'de posiciones cerradas. El porcentaje va sobre el coste de lo vendido.'
+              : 'Se calculará en cuanto estén cargados los movimientos.'
           }
         />
         <Stat
           label="Total"
-          value={formatSignedEur(total, hidden)}
-          sub={totalPct !== undefined ? formatPct(totalPct) : undefined}
-          tone={total >= 0 ? 'positive' : 'negative'}
+          value={available.valuation ? formatSignedEur(total, hidden) : PENDING}
+          sub={available.valuation && totalPct !== undefined ? formatPct(totalPct) : undefined}
+          tone={available.valuation ? (total >= 0 ? 'positive' : 'negative') : undefined}
           // Lo que la etiqueta ya no dice (que incluye dividendos e
           // intereses) pasa a la explicación, para no ocupar dos líneas.
           title={
-            `Rendimiento de todo lo aportado, con dividendos e intereses incluidos: ` +
-            `${formatEur(portfolioValue, hidden)} de valor actual frente a ${formatEur(totalDeposits, hidden)} de ingresos de efectivo.`
+            available.valuation
+              ? `Rendimiento de todo lo aportado, con dividendos e intereses incluidos: ` +
+                `${formatEur(portfolioValue, hidden)} de valor actual frente a ${formatEur(totalDeposits, hidden)} de ingresos de efectivo.`
+              : missingPricesReason
           }
         />
-        {xirrPct !== undefined && (
+        {/* Sin los precios de toda la cartera el XIRR sería el de una cartera
+            que vale cero: se oculta del todo en vez de enseñar un -70 %. */}
+        {available.valuation && xirrPct !== undefined && (
           <Stat
             label={usedFallback ? 'XIRR (aprox.)' : 'XIRR'}
             value={formatPct(xirrPct)}

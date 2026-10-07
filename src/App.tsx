@@ -68,7 +68,7 @@ function App() {
 
         {tab === 'cartera' ? (
           <>
-            <SummaryCards rows={rows} />
+            <SummaryCards rows={rows} isLoading={isLoading} />
             <DayMoversPanel rows={rows} />
             <div className="main-grid">
               <PositionsTable
