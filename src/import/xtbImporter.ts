@@ -1,27 +1,6 @@
 import ExcelJS from 'exceljs'
-import type { OperationType, Transaction } from '../domain/types'
-
-const TYPE_MAP: Record<string, OperationType> = {
-  'Stock purchase': 'buy',
-  'Stock sell': 'sell',
-  Dividend: 'dividend',
-  'Withholding tax': 'fee',
-  'SEC fee': 'fee',
-  'Stamp duty': 'fee',
-  'Tax IFTT': 'fee',
-  Correction: 'fee',
-  'Free funds interest tax': 'fee',
-  'Free funds interest': 'interest',
-  Deposit: 'deposit',
-}
-
-// Ejemplos vistos en extractos reales de XTB (compra y venta pueden venir
-// como fill único o parcial, con o sin el denominador "/total"):
-//   "OPEN BUY 6 @ 529.71"
-//   "OPEN BUY 1/21 @ 108.80"
-//   "CLOSE BUY 40 @ 750.00"
-//   "CLOSE BUY 15/25 @ 798.20"
-const TRADE_COMMENT_RE = /(?:OPEN|CLOSE) BUY\s+([\d.]+)(?:\/[\d.]+)?\s*@\s*([\d.]+)/i
+import type { Transaction } from '../domain/types'
+import { parseTradeComment, signedAmount, TYPE_MAP } from './xtbOperations'
 
 export interface XtbImportWarning {
   rowId: string
@@ -102,7 +81,7 @@ export async function parseXtbWorkbook(buffer: ArrayBuffer): Promise<XtbImportRe
       const id = `xtb-${String(rawId)}`
       const dateValue = row.getCell(idxTime).value
       const date = dateValue instanceof Date ? dateValue.toISOString() : String(dateValue ?? '')
-      const amount = Number(row.getCell(idxAmount).value ?? 0)
+      const amount = signedAmount(rawType, Number(row.getCell(idxAmount).value ?? 0))
       const ticker = idxTicker > 0 ? String(row.getCell(idxTicker).value ?? '').trim() : ''
       const instrument = idxInstrument > 0 ? String(row.getCell(idxInstrument).value ?? '').trim() : ''
       const comment = idxComment > 0 ? String(row.getCell(idxComment).value ?? '').trim() : ''
@@ -120,9 +99,9 @@ export async function parseXtbWorkbook(buffer: ArrayBuffer): Promise<XtbImportRe
       let price = 0
 
       if (type === 'buy' || type === 'sell') {
-        const match = comment.match(TRADE_COMMENT_RE)
-        if (match) {
-          quantity = Number(match[1])
+        const trade = parseTradeComment(comment)
+        if (trade) {
+          quantity = trade.quantity
           price = quantity > 0 ? Math.abs(amount) / quantity : 0
         } else {
           warnings.push({ rowId: id, message: `No se pudo extraer cantidad/precio del comentario: "${comment}"` })
