@@ -10,86 +10,105 @@ interface ProxyPriceResponse {
   isTodaySession?: boolean
   preMarketChangePct?: number
   name?: string
+  marketOpen?: boolean
 }
 
 /**
- * Orquesta la cadena de fallback Twelve Data → Yahoo (vía `/api/price`,
- * proxy serverless — ver `api/price.ts`) → última cotización cacheada en
- * IndexedDB. El proxy ya resuelve el fallback entre proveedores; esta capa
- * solo añade el último nivel (caché local) cuando el proxy en sí falla
- * (sin conexión, función caída, etc.).
+ * Margen para la llamada entera. El servidor ya corta cada consulta a un
+ * proveedor a los 5 s; esto cubre que la propia función no responda.
  */
-export async function getPrice(mapping: SymbolMapping): Promise<PriceCacheEntry> {
+const REQUEST_TIMEOUT_MS = 30_000
+
+/**
+ * Actualiza el precio de varios instrumentos con UNA llamada a `/api/prices`
+ * (ver `api/prices.ts`), que resuelve Yahoo → Twelve Data por cada uno.
+ *
+ * Los precios nuevos se guardan de una sola vez. Antes cada uno se escribía
+ * por separado y cada escritura hacía recalcular la cartera entera: con 30
+ * posiciones, 30 recálculos por actualización.
+ *
+ * Si la llamada falla o un instrumento no tiene precio, se queda con el
+ * último guardado; solo cuenta como fallo si tampoco hay ninguno guardado.
+ */
+export async function getPrices(
+  mappings: SymbolMapping[],
+): Promise<{ prices: PriceCacheEntry[]; failed: { symbol: string; error: string }[] }> {
+  if (mappings.length === 0) return { prices: [], failed: [] }
+
+  let results: Record<string, ProxyPriceResponse | null> = {}
+  let requestError: string | undefined
   try {
-    const params = new URLSearchParams({
-      twelveDataSymbol: mapping.twelveDataSymbol,
-      yahooSymbol: mapping.yahooSymbol,
+    const res = await fetch('/api/prices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: mappings.map((m) => ({
+          key: m.xtbSymbol,
+          yahooSymbol: m.yahooSymbol,
+          twelveDataSymbol: m.twelveDataSymbol,
+          twelveDataExchange: m.twelveDataExchange,
+          // Con ISIN, el proxy toma el cierre anterior de Börse Frankfurt, que
+          // es la plaza del broker; sin él, se queda con el de Yahoo. Se busca
+          // en la tabla estática y no en el `mapping`, que se guarda al
+          // importar y puede ser de antes de que existiera esa tabla.
+          isin: frankfurtIsinFor(m.xtbSymbol),
+        })),
+      }),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     })
-    if (mapping.twelveDataExchange) {
-      params.set('twelveDataExchange', mapping.twelveDataExchange)
-    }
-    // Con ISIN, el proxy toma el cierre anterior de Börse Frankfurt, que es la
-    // plaza del broker; sin él, se queda con el de Yahoo.
-    //
-    // Se busca en la tabla estática en vez de leerlo del `mapping`: los
-    // mappings se persisten en IndexedDB al importar, así que uno guardado
-    // antes de que existiera esta tabla no tendría el ISIN y la mejora no se
-    // aplicaría hasta reimportar el extracto.
-    const isin = frankfurtIsinFor(mapping.xtbSymbol)
-    if (isin) {
-      params.set('isin', isin)
-    }
+    if (!res.ok) throw new Error(`El proxy de precios respondió ${res.status}`)
+    results = ((await res.json()) as { results?: typeof results }).results ?? {}
+  } catch (err) {
+    requestError = err instanceof Error ? err.message : String(err)
+  }
 
-    const res = await fetch(`/api/price?${params.toString()}`)
-    if (!res.ok) {
-      throw new Error(`El proxy de precios respondió ${res.status}`)
-    }
+  const fetchedAt = new Date().toISOString()
+  const fresh: PriceCacheEntry[] = []
+  const names: { symbol: string; name: string }[] = []
 
-    const data = (await res.json()) as ProxyPriceResponse
-    const entry: PriceCacheEntry = {
+  for (const mapping of mappings) {
+    const data = results[mapping.xtbSymbol]
+    if (!data) continue
+    fresh.push({
       symbol: mapping.xtbSymbol,
       price: data.price,
       currency: data.currency,
       source: data.source,
-      fetchedAt: new Date().toISOString(),
+      fetchedAt,
       previousClose: data.previousClose,
       isTodaySession: data.isTodaySession,
       preMarketChangePct: data.preMarketChangePct,
-    }
-    await db.priceCache.put(entry)
-
-    // El nombre completo del instrumento no viene en el extracto de XTB —
-    // se rellena a partir de lo que devuelva el proveedor de precios, la
-    // primera vez que se consigue.
-    if (data.name && data.name !== mapping.name) {
-      await db.symbolMappings.put({ ...mapping, name: data.name })
-    }
-
-    return entry
-  } catch (err) {
-    const cached = await db.priceCache.get(mapping.xtbSymbol)
-    if (cached) return cached
-
-    const reason = err instanceof Error ? err.message : String(err)
-    throw new Error(`Sin precio disponible para ${mapping.xtbSymbol} (proxy falló y no hay caché previa: ${reason})`)
+      marketOpen: data.marketOpen,
+    })
+    // El nombre completo no viene en el extracto: se rellena con el que dé
+    // el proveedor de precios.
+    if (data.name && data.name !== mapping.name) names.push({ symbol: mapping.xtbSymbol, name: data.name })
   }
-}
 
-/** Obtiene el precio de varios símbolos en paralelo; los fallos individuales no interrumpen al resto. */
-export async function getPrices(
-  mappings: SymbolMapping[],
-): Promise<{ prices: PriceCacheEntry[]; failed: { symbol: string; error: string }[] }> {
-  const results = await Promise.allSettled(mappings.map((m) => getPrice(m)))
-
-  const prices: PriceCacheEntry[] = []
-  const failed: { symbol: string; error: string }[] = []
-
-  results.forEach((result, i) => {
-    if (result.status === 'fulfilled') {
-      prices.push(result.value)
-    } else {
-      failed.push({ symbol: mappings[i].xtbSymbol, error: String(result.reason) })
+  await db.transaction('rw', db.priceCache, db.symbolMappings, async () => {
+    await db.priceCache.bulkPut(fresh)
+    // `update` y no `put` de una copia: solo toca el nombre. Escribir el
+    // mapeo entero desde una copia leída antes pisaba el logo si se había
+    // resuelto mientras tanto.
+    for (const { symbol, name } of names) {
+      await db.symbolMappings.update(symbol, { name })
     }
+  })
+
+  const freshSymbols = new Set(fresh.map((p) => p.symbol))
+  const missing = mappings.filter((m) => !freshSymbols.has(m.xtbSymbol))
+  const cached = await db.priceCache.bulkGet(missing.map((m) => m.xtbSymbol))
+
+  const prices = [...fresh]
+  const failed: { symbol: string; error: string }[] = []
+  missing.forEach((mapping, i) => {
+    const entry = cached[i]
+    if (entry) prices.push(entry)
+    else
+      failed.push({
+        symbol: mapping.xtbSymbol,
+        error: `Sin precio disponible para ${mapping.xtbSymbol}${requestError ? ` (${requestError})` : ''}`,
+      })
   })
 
   return { prices, failed }

@@ -1,10 +1,9 @@
-import { useLiveQuery } from 'dexie-react-hooks'
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
-import { db } from '../db/db'
 import type { Transaction } from '../domain/types'
 import { categoryLabel, SIN_CATEGORIA } from '../domain/instrumentCategory'
+import { useTransactions } from '../hooks/portfolioData'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { formatPct, formatShare } from '../utils/format'
+import { DonutChart } from './DonutChart'
 
 // Mismos colores que AllocationChart, en el mismo orden, para que una
 // categoría tenga siempre el mismo color en las dos gráficas.
@@ -12,9 +11,6 @@ const COLORS = ['#38bdf8', '#a78bfa', '#f472b6', '#fb923c', '#facc15', '#4ade80'
 
 const LIQUIDEZ = 'Liquidez'
 
-// Literal a nivel de módulo, no `[]` en el cuerpo del componente: un array
-// nuevo en cada render rompería la memoización de useLiveQuery mientras la
-// consulta a Dexie está resolviéndose — mismo motivo que en SummaryCards.
 const NO_TRANSACTIONS: Transaction[] = []
 
 interface CategoryStat {
@@ -40,7 +36,7 @@ interface CategoryStat {
  * franja lateral y no como dos paneles descoordinados.
  */
 export function CategoryPerformanceChart({ rows }: { rows: PortfolioRow[] }) {
-  const transactionsQuery = useLiveQuery(() => db.transactions.toArray(), [])
+  const transactionsQuery = useTransactions()
   const transactions = transactionsQuery ?? NO_TRANSACTIONS
   // Mismo cálculo que "Liquidez" en SummaryCards: cada transacción ya trae
   // su importe neto en EUR, así que sumar todo el histórico da la caja
@@ -85,36 +81,23 @@ export function CategoryPerformanceChart({ rows }: { rows: PortfolioRow[] }) {
   return (
     <div className="chart-container">
       <span className="card-label chart-container-label">Tipo de instrumento</span>
-      <ResponsiveContainer width="100%" height={130}>
-        <PieChart>
-          <Pie
-            data={data}
-            dataKey="pctCartera"
-            nameKey="category"
-            innerRadius={30}
-            outerRadius={54}
-            paddingAngle={1}
-            isAnimationActive={false}
-          >
-            {data.map((entry, i) => (
-              <Cell key={entry.category} fill={COLORS[i % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip
-            formatter={(value, name, item) => {
-              const rendimiento = (item.payload as CategoryStat)?.pctRendimiento
-              const pctText = `${formatShare(Number(value))} de la cartera`
-              // La liquidez (y cualquier categoría sin coste de adquisición)
-              // no tiene plusvalía que mostrar — se omite la coletilla en
-              // vez de decir "sin datos", que sonaría a fallo cuando en
-              // realidad es que no aplica.
-              const text = rendimiento !== undefined ? `${pctText} · ${formatPct(rendimiento)} de rendimiento` : pctText
-              return [text, name]
-            }}
-            contentStyle={{ background: '#1e293b', border: '1px solid #2c3a52', borderRadius: 10, color: '#e7ebf3' }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+      <DonutChart
+        ariaLabel="Reparto de la cartera por tipo de instrumento"
+        slices={data.map((d, i) => {
+          const pctText = `${formatShare(d.pctCartera)} de la cartera`
+          return {
+            key: d.category,
+            value: d.pctCartera,
+            color: COLORS[i % COLORS.length],
+            label: d.category,
+            // La liquidez (y cualquier categoría sin coste de adquisición) no
+            // tiene plusvalía que mostrar — se omite la coletilla en vez de
+            // decir "sin datos", que sonaría a fallo cuando es que no aplica.
+            detail:
+              d.pctRendimiento !== undefined ? `${pctText} · ${formatPct(d.pctRendimiento)} de rendimiento` : pctText,
+          }
+        })}
+      />
 
       <div className="chart-legend">
         {data.map((d, i) => (

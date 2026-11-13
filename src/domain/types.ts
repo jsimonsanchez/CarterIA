@@ -53,6 +53,8 @@ export interface PriceCacheEntry {
   isTodaySession?: boolean
   /** Variación de pre-mercado sobre el cierre de ayer, solo si el mercado aún no ha abierto hoy — ver `api/price.ts`. */
   preMarketChangePct?: number
+  /** Si su mercado estaba en sesión al consultarlo — ver `useAutoRefresh`. */
+  marketOpen?: boolean
 }
 
 /**

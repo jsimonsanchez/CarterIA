@@ -1,9 +1,8 @@
-import { useLiveQuery } from 'dexie-react-hooks'
 import { Fragment, useState } from 'react'
-import { db } from '../db/db'
 import { buildRealizedYears, type RealizedSymbol } from '../domain/realized'
 import type { ClosedTrade } from '../domain/types'
 import { cagr, MIN_DAYS_TO_ANNUALIZE } from '../domain/xirr'
+import { useClosedTrades, useTransactions } from '../hooks/portfolioData'
 import { useLogos } from '../hooks/useLogos'
 import { usePrivacy } from '../hooks/usePrivacy'
 import { formatDate, formatEur, formatPct, formatQuantity, formatSignedEur } from '../utils/format'
@@ -16,8 +15,8 @@ type Logos = Record<string, string | null>
 
 export function RealizedGainsPanel() {
   const { hidden } = usePrivacy()
-  const trades = useLiveQuery(() => db.closedTrades.toArray(), [])
-  const transactions = useLiveQuery(() => db.transactions.toArray(), [])
+  const trades = useClosedTrades()
+  const transactions = useTransactions()
   const [openYear, setOpenYear] = useState<number | null>(null)
   // Clave "año|símbolo": el mismo valor puede haberse cerrado en varios
   // años, y desplegarlo en uno no debería desplegarlo en los demás.

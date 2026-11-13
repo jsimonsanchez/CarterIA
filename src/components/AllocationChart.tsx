@@ -1,7 +1,7 @@
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { usePrivacy } from '../hooks/usePrivacy'
 import { formatEur, formatShare } from '../utils/format'
+import { DonutChart } from './DonutChart'
 
 const COLORS = ['#38bdf8', '#a78bfa', '#f472b6', '#fb923c', '#facc15', '#4ade80', '#2dd4bf', '#818cf8', '#fb7185', '#c084fc']
 const LEGEND_LIMIT = 8
@@ -17,6 +17,7 @@ export function AllocationChart({ rows }: { rows: PortfolioRow[] }) {
   if (data.length === 0) return null
 
   const total = data.reduce((acc, d) => acc + d.value, 0)
+  const share = (value: number) => formatShare(total > 0 ? (value / total) * 100 : 0)
 
   const legendItems = data.slice(0, LEGEND_LIMIT)
   const rest = data.slice(LEGEND_LIMIT)
@@ -25,45 +26,30 @@ export function AllocationChart({ rows }: { rows: PortfolioRow[] }) {
   return (
     <div className="chart-container">
       <span className="card-label chart-container-label">Cartera</span>
-      <ResponsiveContainer width="100%" height={130}>
-        <PieChart>
-          <Pie
-            data={data}
-            dataKey="value"
-            nameKey="name"
-            innerRadius={30}
-            outerRadius={54}
-            paddingAngle={1}
-            isAnimationActive={false}
-          >
-            {data.map((entry, i) => (
-              <Cell key={entry.name} fill={COLORS[i % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip
-            formatter={(value, name) => {
-              const numericValue = Number(value)
-              const pct = total > 0 ? (numericValue / total) * 100 : 0
-              return [`${formatEur(numericValue, hidden)} (${formatShare(pct)})`, name]
-            }}
-            contentStyle={{ background: '#1e293b', border: '1px solid #2c3a52', borderRadius: 10, color: '#e7ebf3' }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+      <DonutChart
+        ariaLabel="Reparto de la cartera por valor"
+        slices={data.map((d, i) => ({
+          key: d.name,
+          value: d.value,
+          color: COLORS[i % COLORS.length],
+          label: d.name,
+          detail: `${formatEur(d.value, hidden)} (${share(d.value)})`,
+        }))}
+      />
 
       <div className="chart-legend">
         {legendItems.map((item, i) => (
           <div className="chart-legend-row" key={item.name}>
             <span className="chart-legend-swatch" style={{ background: COLORS[i % COLORS.length] }} />
             <span className="chart-legend-symbol">{item.name}</span>
-            <span className="chart-legend-pct">{formatShare(total > 0 ? (item.value / total) * 100 : 0)}</span>
+            <span className="chart-legend-pct">{share(item.value)}</span>
           </div>
         ))}
         {rest.length > 0 && (
           <div className="chart-legend-row">
             <span className="chart-legend-swatch" style={{ background: 'var(--border)' }} />
             <span className="chart-legend-symbol">Otros ({rest.length})</span>
-            <span className="chart-legend-pct">{formatShare(total > 0 ? (restValue / total) * 100 : 0)}</span>
+            <span className="chart-legend-pct">{share(restValue)}</span>
           </div>
         )}
       </div>

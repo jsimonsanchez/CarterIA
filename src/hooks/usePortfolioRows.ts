@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useRef, useState } from 'react'
 import { db } from '../db/db'
 import type { Broker } from '../domain/types'
-import { convertToEur } from '../prices/fx'
+import { convertToEur, isFxStale } from '../prices/fx'
 import { getPrices } from '../prices/priceRepository'
 
 export interface PortfolioRow {
@@ -34,6 +34,8 @@ export interface PortfolioRow {
    * broker no negocia en pre-mercado.
    */
   preMarketChangePct?: number
+  /** El importe en EUR usa un tipo de cambio caducado porque el proveedor no respondió. */
+  fxStale?: boolean
 }
 
 /**
@@ -141,6 +143,7 @@ export function usePortfolioRows(): { rows: PortfolioRow[]; isLoading: boolean }
               dayChangeEur,
               preMarketChangePct:
                 dayChangePct === undefined && price.isTodaySession === false ? price.preMarketChangePct : undefined,
+              fxStale: isFxStale(price.currency),
             }
           } catch (err) {
             return { ...base, priceError: err instanceof Error ? err.message : String(err) }

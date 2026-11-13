@@ -50,7 +50,10 @@ export function useLogos(symbols: string[]): Record<string, string | null> {
         // porque marcarlo como "sin logo" lo volvería permanente.
         if (resolved === 'retry') continue
 
-        await db.symbolMappings.put({ ...mapping, logoUrl: resolved })
+        // `update` y no `put` de la copia leída al principio: mientras se
+        // resolvía el logo, la actualización de precios ha podido guardar el
+        // nombre, y escribir el mapeo entero lo borraría.
+        await db.symbolMappings.update(mapping.xtbSymbol, { logoUrl: resolved })
         if (resolved !== null && !cancelled) {
           setUrls((prev) => ({ ...prev, [symbol]: resolved }))
         }

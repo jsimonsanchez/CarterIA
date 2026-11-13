@@ -1,12 +1,11 @@
-import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from '../db/db'
 import { isTaxFee } from '../domain/fees'
+import { useTransactions } from '../hooks/portfolioData'
 import { usePrivacy } from '../hooks/usePrivacy'
 import { formatEur } from '../utils/format'
 
 export function ReportsPanel() {
   const { hidden } = usePrivacy()
-  const transactions = useLiveQuery(() => db.transactions.toArray(), [])
+  const transactions = useTransactions()
 
   if (!transactions || transactions.length === 0) return null
 

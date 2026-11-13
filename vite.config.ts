@@ -73,12 +73,17 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
         // ExcelJS son ~900 KB, más de la mitad de todo lo precacheado, y solo
         // hace falta al importar un extracto. Fuera del precacheo no se
         // descarga en la primera visita; se trae la primera vez que se
         // importa y a partir de ahí queda en caché.
-        globIgnores: ['**/exceljs*.js'],
+        //
+        // De las fuentes solo se precachea el alfabeto latino básico, que
+        // cubre el español y el símbolo €. El resto de juegos de caracteres
+        // (cirílico, griego...) el navegador los pide solo si alguna vez
+        // aparece un carácter suyo.
+        globIgnores: ['**/exceljs*.js', '**/*-{latin-ext,cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*.woff2'],
         runtimeCaching: [
           {
             // El nombre lleva el hash del contenido, así que nunca cambia sin

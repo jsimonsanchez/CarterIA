@@ -19,6 +19,19 @@ let cache: Record<string, CachedRate> | null = null
 const inFlight = new Map<string, Promise<number>>()
 
 /**
+ * Divisas que se están convirtiendo con un tipo guardado ya caducado porque
+ * el proveedor no respondió. Se usa igual —informa más que un error—, pero
+ * la app lo avisa: ese tipo puede ser de hace días.
+ */
+const staleCurrencies = new Set<string>()
+
+/** ¿La conversión de esta divisa usa ahora un tipo de cambio caducado? */
+export function isFxStale(currency: string): boolean {
+  const cur = currency.trim()
+  return staleCurrencies.has(cur === 'GBp' || cur === 'GBX' ? 'GBP' : cur)
+}
+
+/**
  * La caché vive en localStorage y no solo en memoria: así abrir la app no
  * necesita ni una petición de red si los tipos siguen frescos. Antes se
  * perdía con cada recarga.
@@ -46,7 +59,7 @@ function writeCache(currency: string, rate: number): void {
 }
 
 async function fetchRate(currency: string): Promise<number> {
-  const res = await fetch(`/api/fx?from=${encodeURIComponent(currency)}`)
+  const res = await fetch(`/api/fx?from=${encodeURIComponent(currency)}`, { signal: AbortSignal.timeout(10_000) })
   if (!res.ok) throw new Error(`No se pudo obtener el tipo de cambio ${currency}->EUR`)
   const data = (await res.json()) as { rate?: unknown }
   const rate = data?.rate
@@ -64,13 +77,18 @@ async function getFxRateToEur(currency: string): Promise<number> {
   const request = fetchRate(currency)
     .then((rate) => {
       writeCache(currency, rate)
+      staleCurrencies.delete(currency)
       return rate
     })
     .catch((err) => {
       // Un tipo de cambio de hace unas horas se parece mucho al de ahora, y
       // desde luego informa más que un error: con él la cartera se sigue
-      // viendo aunque el proveedor esté caído o no haya conexión.
-      if (cached) return cached.rate
+      // viendo aunque el proveedor esté caído o no haya conexión. Pero se
+      // marca, para que la app avise de que no está al día.
+      if (cached) {
+        staleCurrencies.add(currency)
+        return cached.rate
+      }
       throw err
     })
     .finally(() => {
@@ -139,6 +157,7 @@ export function resetFxCacheForTests(): void {
   cache = null
   inFlight.clear()
   historicRates.clear()
+  staleCurrencies.clear()
   try {
     localStorage.removeItem(STORAGE_KEY)
   } catch {

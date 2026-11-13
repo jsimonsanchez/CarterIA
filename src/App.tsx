@@ -1,20 +1,17 @@
-import { lazy, Suspense, useState } from 'react'
+import { useState } from 'react'
 import './App.css'
+import { AllocationChart } from './components/AllocationChart'
 import { AppVersionPopover } from './components/AppVersionPopover'
+import { CategoryPerformanceChart } from './components/CategoryPerformanceChart'
 import { DayMoversPanel } from './components/DayMoversPanel'
 import { ImportButton, ImportFeedback, useXtbImport } from './components/ImportPanel'
+import { PortfolioDataProvider } from './components/PortfolioDataProvider'
 import { PositionsTable } from './components/PositionsTable'
 import { RealizedGainsPanel } from './components/RealizedGainsPanel'
 import { ReportsPanel } from './components/ReportsPanel'
 import { SummaryCards } from './components/SummaryCards'
 import { refreshPrices, usePortfolioRows } from './hooks/usePortfolioRows'
 import { PrivacyProvider, usePrivacy } from './hooks/usePrivacy'
-
-// recharts es pesado (~400 kB) y solo hace falta cuando hay datos que graficar.
-const AllocationChart = lazy(() => import('./components/AllocationChart').then((m) => ({ default: m.AllocationChart })))
-const CategoryPerformanceChart = lazy(() =>
-  import('./components/CategoryPerformanceChart').then((m) => ({ default: m.CategoryPerformanceChart })),
-)
 
 type Tab = 'cartera' | 'realizado'
 
@@ -40,6 +37,7 @@ function App() {
 
   return (
     <PrivacyProvider>
+      <PortfolioDataProvider>
       <div className="app">
         <header className="app-header">
           <h1>
@@ -79,12 +77,8 @@ function App() {
                 refreshError={refreshError}
               />
               <div className="sidebar-charts">
-                <Suspense fallback={null}>
-                  <AllocationChart rows={rows} />
-                </Suspense>
-                <Suspense fallback={null}>
-                  <CategoryPerformanceChart rows={rows} />
-                </Suspense>
+                <AllocationChart rows={rows} />
+                <CategoryPerformanceChart rows={rows} />
               </div>
             </div>
             <ReportsPanel />
@@ -93,6 +87,7 @@ function App() {
           <RealizedGainsPanel />
         )}
       </div>
+      </PortfolioDataProvider>
     </PrivacyProvider>
   )
 }

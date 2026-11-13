@@ -1,6 +1,4 @@
-export const config = { runtime: 'edge' }
-
-interface PriceResult {
+export interface PriceResult {
   price: number
   currency: string
   source: 'twelvedata' | 'yahoo'
@@ -25,11 +23,22 @@ interface PriceResult {
   preMarketChangePct?: number
   /** Nombre completo del instrumento (p.ej. "Apple Inc."), cuando el proveedor lo da. */
   name?: string
+  /**
+   * Si su mercado está ahora en sesión (pre-mercado incluido). La
+   * autoactualización lo usa para no pedir precios cada minuto con todas las
+   * bolsas cerradas. `undefined` si el proveedor no lo dice.
+   */
+  marketOpen?: boolean
 }
 
 // Yahoo devuelve 403/429 sin una cabecera User-Agent de navegador real.
 const YAHOO_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+
+// Ninguna petición a un proveedor puede quedarse colgada: sin límite, una
+// sola que no responde dejaba "Actualizando…" indefinidamente y bloqueaba la
+// actualización automática, que no se lanza mientras hay otra en curso.
+const PROVIDER_TIMEOUT_MS = 5000
 
 async function fetchTwelveData(symbol: string, exchange: string | null): Promise<PriceResult | null> {
   const apiKey = process.env.TWELVE_DATA_API_KEY
@@ -41,7 +50,7 @@ async function fetchTwelveData(symbol: string, exchange: string | null): Promise
   if (exchange) url.searchParams.set('exchange', exchange)
 
   try {
-    const res = await fetch(url)
+    const res = await fetch(url, { signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS) })
     if (!res.ok) return null
     const data = await res.json()
     // Twelve Data responde 200 con {status:"error", ...} cuando se agota la
@@ -56,6 +65,7 @@ async function fetchTwelveData(symbol: string, exchange: string | null): Promise
       previousClose: Number.isFinite(previousClose) ? previousClose : undefined,
       isTodaySession: data.is_market_open === true || data.datetime === today,
       name: typeof data.name === 'string' ? data.name : undefined,
+      marketOpen: typeof data.is_market_open === 'boolean' ? data.is_market_open : undefined,
     }
   } catch {
     return null
@@ -153,7 +163,10 @@ function sesionDeHoy(
 async function fetchYahooPreMarketPrice(host: string, symbol: string, preStart: number): Promise<number | null> {
   const url = `https://${host}/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1m&range=1d&includePrePost=true`
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': YAHOO_USER_AGENT } })
+    const res = await fetch(url, {
+      headers: { 'User-Agent': YAHOO_USER_AGENT },
+      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
+    })
     if (!res.ok) return null
     const data = await res.json()
     const result = data?.chart?.result?.[0]
@@ -175,7 +188,10 @@ async function fetchYahooPreMarketPrice(host: string, symbol: string, preStart: 
 async function fetchYahooFromHost(host: string, symbol: string): Promise<PriceResult | null> {
   const url = `https://${host}/v8/finance/chart/${encodeURIComponent(symbol)}`
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': YAHOO_USER_AGENT } })
+    const res = await fetch(url, {
+      headers: { 'User-Agent': YAHOO_USER_AGENT },
+      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
+    })
     if (!res.ok) return null
     const data = await res.json()
     const result = data?.chart?.result?.[0]
@@ -196,7 +212,17 @@ async function fetchYahooFromHost(host: string, symbol: string): Promise<PriceRe
 
     let preMarketChangePct: number | undefined
     const pre = result?.meta?.currentTradingPeriod?.pre
+    const regular = result?.meta?.currentTradingPeriod?.regular
     const now = Date.now() / 1000
+
+    // En sesión desde el pre-mercado (cuyo precio también se enseña) hasta el
+    // cierre regular. Después del cierre el precio ya no cambia para la app,
+    // que solo usa el regular.
+    const sessionStart = typeof pre?.start === 'number' ? pre.start : regular?.start
+    const marketOpen =
+      typeof sessionStart === 'number' && typeof regular?.end === 'number'
+        ? now >= sessionStart && now < regular.end
+        : undefined
     if (
       isTodaySession === false &&
       typeof pre?.start === 'number' &&
@@ -218,6 +244,7 @@ async function fetchYahooFromHost(host: string, symbol: string): Promise<PriceRe
       isTodaySession,
       preMarketChangePct,
       name: typeof name === 'string' ? name : undefined,
+      marketOpen,
     }
   } catch {
     return null
@@ -232,11 +259,15 @@ async function fetchYahoo(symbol: string): Promise<PriceResult | null> {
   return null
 }
 
+export interface QuoteRequest {
+  yahooSymbol: string
+  twelveDataSymbol: string
+  twelveDataExchange?: string
+  isin?: string
+}
+
 /**
- * Proxy same-origin para los precios de mercado: el navegador nunca llama a
- * Twelve Data ni a Yahoo directamente (ninguno de los dos permite CORS desde
- * un origen de navegador), y la API key de Twelve Data se queda en el
- * servidor en vez de ir embebida en el bundle del cliente.
+ * Precio de un instrumento.
  *
  * Yahoo va primero y Twelve Data queda como respaldo. El orden era el
  * inverso, pero el plan gratuito de Twelve Data ya rechazaba la mayoría de
@@ -246,17 +277,12 @@ async function fetchYahoo(symbol: string): Promise<PriceResult | null> {
  * también los logos, que dependen del mismo crédito y no tienen alternativa
  * en Yahoo. Yahoo no pide clave ni tiene cuota.
  */
-export default async function handler(request: Request): Promise<Response> {
-  const url = new URL(request.url)
-  const twelveDataSymbol = url.searchParams.get('twelveDataSymbol')
-  const twelveDataExchange = url.searchParams.get('twelveDataExchange')
-  const yahooSymbol = url.searchParams.get('yahooSymbol')
-  const isin = url.searchParams.get('isin')
-
-  if (!twelveDataSymbol || !yahooSymbol) {
-    return Response.json({ error: 'Faltan parámetros twelveDataSymbol/yahooSymbol' }, { status: 400 })
-  }
-
+export async function getQuote({
+  yahooSymbol,
+  twelveDataSymbol,
+  twelveDataExchange,
+  isin,
+}: QuoteRequest): Promise<PriceResult | null> {
   // En paralelo: el cierre de Frankfurt no debe añadir latencia al de Yahoo,
   // que es el que de verdad hace falta para valorar la cartera.
   const [fromYahoo, frankfurtPreviousClose] = await Promise.all([
@@ -271,15 +297,8 @@ export default async function handler(request: Request): Promise<Response> {
     // Novo Nordisk con +636%. Ante la duda se prefiere el cierre de Yahoo,
     // que al menos está en la misma divisa que el precio.
     const usarFrankfurt = frankfurtPreviousClose !== null && fromYahoo.currency === 'EUR'
-    return Response.json(
-      usarFrankfurt ? { ...fromYahoo, previousClose: frankfurtPreviousClose } : fromYahoo,
-    )
+    return usarFrankfurt ? { ...fromYahoo, previousClose: frankfurtPreviousClose } : fromYahoo
   }
 
-  const fromTwelveData = await fetchTwelveData(twelveDataSymbol, twelveDataExchange)
-  if (fromTwelveData) {
-    return Response.json(fromTwelveData)
-  }
-
-  return Response.json({ error: 'No se pudo obtener precio de ningún proveedor' }, { status: 502 })
+  return fetchTwelveData(twelveDataSymbol, twelveDataExchange ?? null)
 }

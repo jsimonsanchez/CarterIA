@@ -13,6 +13,9 @@ const ALLOWED_IMAGE_PREFIXES = [
 /** Logos por ticker, sin clave ni cuota. Acepta el mismo formato de símbolo que Yahoo (SAP.DE, NOVO-B.CO, DGE.L...). */
 const FMP_LOGO_PREFIX = 'https://financialmodelingprep.com/image-stock/'
 
+/** Ninguna petición a un proveedor puede quedarse colgada indefinidamente. */
+const TIMEOUT_MS = 5000
+
 /**
  * Proxy same-origin del logo de una empresa, en dos modos:
  *
@@ -44,7 +47,7 @@ async function streamImage(src: string): Promise<Response> {
   }
 
   try {
-    const imgRes = await fetch(src)
+    const imgRes = await fetch(src, { signal: AbortSignal.timeout(TIMEOUT_MS) })
     if (!imgRes.ok || !imgRes.body) return new Response(null, { status: 404 })
 
     return new Response(imgRes.body, {
@@ -76,7 +79,7 @@ async function resolveLogoUrl(
   if (yahooSymbol) {
     const fmpUrl = `${FMP_LOGO_PREFIX}${encodeURIComponent(yahooSymbol)}.png`
     try {
-      const res = await fetch(fmpUrl, { method: 'HEAD' })
+      const res = await fetch(fmpUrl, { method: 'HEAD', signal: AbortSignal.timeout(TIMEOUT_MS) })
       if (res.ok) return Response.json({ url: fmpUrl })
     } catch {
       // Se ignora y se prueba con Twelve Data.
@@ -97,7 +100,7 @@ async function resolveFromTwelveData(symbol: string, exchange: string | null): P
     meta.searchParams.set('apikey', apiKey)
     if (exchange) meta.searchParams.set('exchange', exchange)
 
-    const metaRes = await fetch(meta)
+    const metaRes = await fetch(meta, { signal: AbortSignal.timeout(TIMEOUT_MS) })
 
     // La cuota agotada hay que distinguirla de "este símbolo no tiene logo":
     // lo primero es temporal y hay que reintentarlo, lo segundo es permanente

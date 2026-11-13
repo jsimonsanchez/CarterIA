@@ -29,11 +29,13 @@ export interface ImportSummary {
  * en resolver cada logo.
  */
 export async function clearBrokerData(broker: Broker): Promise<void> {
-  await db.transaction('rw', db.transactions, db.closedTrades, db.positions, db.priceCache, async () => {
+  // La caché de precios no se toca: es por instrumento, no por bróker, y
+  // vaciarla dejaba toda la cartera —también la de los otros brókers— sin
+  // precio hasta pulsar "Actualizar precios".
+  await db.transaction('rw', db.transactions, db.closedTrades, db.positions, async () => {
     await db.transactions.where('broker').equals(broker).delete()
     await db.closedTrades.where('broker').equals(broker).delete()
     await recomputePositions()
-    await db.priceCache.clear()
   })
 }
 

@@ -1,12 +1,11 @@
-import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo } from 'react'
-import { db } from '../db/db'
 import { totalReturn } from '../domain/performance'
 import { netDividends } from '../domain/realized'
 import { isPriceStale } from '../domain/priceFreshness'
 import { summaryAvailability } from '../domain/summaryAvailability'
 import { modifiedDietzAnnualized, xirr } from '../domain/xirr'
 import type { ClosedTrade, Transaction } from '../domain/types'
+import { useClosedTrades, useTransactions } from '../hooks/portfolioData'
 import type { PortfolioRow } from '../hooks/usePortfolioRows'
 import { usePrivacy } from '../hooks/usePrivacy'
 import { formatEur, formatPct, formatSignedEur } from '../utils/format'
@@ -14,8 +13,8 @@ import { InfoPopover } from './InfoPopover'
 
 // Constantes a nivel de módulo, no literales `[]` en el cuerpo del
 // componente: un literal crea un array nuevo en cada render mientras la
-// consulta a Dexie está resolviéndose, lo que rompería la memoización del
-// XIRR de más abajo (su dependencia cambiaría siempre).
+// consulta está resolviéndose, lo que rompería la memoización del XIRR de
+// más abajo (su dependencia cambiaría siempre).
 const NO_TRADES: ClosedTrade[] = []
 const NO_TRANSACTIONS: Transaction[] = []
 
@@ -24,8 +23,8 @@ const PENDING = '—'
 
 export function SummaryCards({ rows, isLoading }: { rows: PortfolioRow[]; isLoading: boolean }) {
   const { hidden } = usePrivacy()
-  const closedTradesQuery = useLiveQuery(() => db.closedTrades.toArray(), [])
-  const transactionsQuery = useLiveQuery(() => db.transactions.toArray(), [])
+  const closedTradesQuery = useClosedTrades()
+  const transactionsQuery = useTransactions()
   const closedTrades = closedTradesQuery ?? NO_TRADES
   const transactions = transactionsQuery ?? NO_TRANSACTIONS
 
@@ -116,7 +115,16 @@ export function SummaryCards({ rows, isLoading }: { rows: PortfolioRow[]; isLoad
 
   // Mientras se carga, "N sin precio" sería falso: los precios no han tenido
   // ocasión de llegar. Solo se avisa cuando ya se ha mirado y de verdad faltan.
-  const priceHint = isLoading ? undefined : buildPriceHint(missingPrices, stalePrices)
+  // Divisas valoradas con un tipo de cambio caducado (el proveedor no
+  // respondió): las cifras en EUR de esas posiciones pueden no estar al día.
+  const fxStaleCurrencies = [
+    ...new Set(
+      withPrice
+        .filter((r) => r.fxStale && r.currentCurrency)
+        .map((r) => (r.currentCurrency === 'GBp' || r.currentCurrency === 'GBX' ? 'GBP' : r.currentCurrency!)),
+    ),
+  ]
+  const priceHint = isLoading ? undefined : buildPriceHint(missingPrices, stalePrices, fxStaleCurrencies)
   const missingPricesReason =
     missingPrices > 0
       ? `Faltan los precios de ${plural(missingPrices, 'posición', 'posiciones')}: pulsa "Actualizar precios". ` +
@@ -240,9 +248,10 @@ function sum<T>(items: T[], pick: (item: T) => number): number {
   return items.reduce((acc, item) => acc + pick(item), 0)
 }
 
-function buildPriceHint(missing: number, stale: number): string | undefined {
+function buildPriceHint(missing: number, stale: number, fxStale: string[]): string | undefined {
   const parts: string[] = []
   if (missing > 0) parts.push(`${missing} sin precio`)
   if (stale > 0) parts.push(`${stale} desactualizado${stale > 1 ? 's' : ''}`)
+  if (fxStale.length > 0) parts.push(`cambio ${fxStale.join('/')} sin actualizar`)
   return parts.length > 0 ? parts.join(' · ') : undefined
 }

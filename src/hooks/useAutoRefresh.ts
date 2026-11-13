@@ -1,4 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { db } from '../db/db'
+import { allMarketsClosed, CLOSED_MARKETS_INTERVAL_MS } from '../domain/marketHours'
+
+/** ¿Estaban cerradas todas las bolsas de las posiciones actuales en la última consulta? */
+async function portfolioMarketsClosed(): Promise<boolean> {
+  const positions = await db.positions.toArray()
+  const prices = await db.priceCache.bulkGet(positions.map((p) => p.symbol))
+  return allMarketsClosed(prices)
+}
 
 const STORAGE_KEY = 'cartera-tracker:auto-refresh'
 export const AUTO_REFRESH_INTERVAL_MS = 60_000
@@ -20,6 +29,9 @@ function readStored(): boolean {
  * - No se solapa con una actualización en curso (manual o automática).
  * - Con la pestaña oculta no se actualiza: nadie está mirando los precios. Al
  *   volver a verla se refresca enseguida si ha pasado más de un intervalo.
+ * - Si en la última consulta todas las bolsas de la cartera estaban cerradas
+ *   (noches, fines de semana, festivos), se espacia a cada 15 minutos: los
+ *   precios no cambian, pero hay que seguir mirando para notar la apertura.
  */
 export function useAutoRefresh(refresh: () => void, refreshing: boolean) {
   const [enabled, setEnabled] = useState(readStored)
@@ -47,7 +59,11 @@ export function useAutoRefresh(refresh: () => void, refreshing: boolean) {
 
     run()
     const timer = setInterval(() => {
-      if (document.visibilityState === 'visible') run()
+      if (document.visibilityState !== 'visible') return
+      void portfolioMarketsClosed().then((closed) => {
+        if (closed && Date.now() - lastRunRef.current < CLOSED_MARKETS_INTERVAL_MS) return
+        run()
+      })
     }, AUTO_REFRESH_INTERVAL_MS)
 
     function handleVisibility() {

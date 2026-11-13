@@ -1065,6 +1065,55 @@
   margin-bottom: 4px;
 }
 
+.donut {
+  position: relative;
+}
+
+.donut svg {
+  display: block;
+  overflow: visible;
+}
+
+.donut-slice {
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+.donut svg:hover .donut-slice:not(.active),
+.donut svg:has(.active) .donut-slice:not(.active) {
+  opacity: 0.55;
+}
+
+.donut-tooltip {
+  position: absolute;
+  z-index: 5;
+  transform: translate(0, calc(-100% - 10px));
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: max-content;
+  max-width: 200px;
+  padding: 7px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+  font-size: 12px;
+  color: var(--text);
+  pointer-events: none;
+}
+
+.donut-tooltip strong {
+  color: var(--text-h);
+  font-weight: 650;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .donut-slice {
+    transition: none;
+  }
+}
+
 .chart-container-hint {
   margin-top: 8px;
 }

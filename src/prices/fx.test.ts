@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { beforeEach, describe, it } from 'node:test'
-import { convertToEur, resetFxCacheForTests } from './fx'
+import { convertToEur, isFxStale, resetFxCacheForTests } from './fx'
 
 /** Sustituye a fetch y cuenta cuántas veces se ha llamado a /api/fx. */
 function stubFetch(responder: (currency: string) => Promise<{ rate: number }>) {
@@ -76,6 +76,47 @@ describe('convertToEur', () => {
 
     // Sigue respondiendo con el tipo cacheado en vez de romper la vista.
     assert.equal(await convertToEur(100, 'USD'), 90)
+  })
+
+  it('marca la divisa como caducada si tiene que tirar de un tipo viejo, y lo desmarca al recuperarse', async () => {
+    const ahora = Date.now
+    try {
+      stubFetch(async () => ({ rate: 0.9 }))
+      await convertToEur(100, 'USD')
+      assert.equal(isFxStale('USD'), false)
+
+      // Dos horas después el tipo guardado ha caducado y el proveedor no responde.
+      Date.now = () => ahora() + 2 * 60 * 60 * 1000
+      globalThis.fetch = (async () => {
+        throw new Error('sin conexión')
+      }) as typeof fetch
+      assert.equal(await convertToEur(100, 'USD'), 90)
+      assert.equal(isFxStale('USD'), true)
+
+      // El proveedor vuelve: el aviso desaparece.
+      stubFetch(async () => ({ rate: 0.95 }))
+      Date.now = () => ahora() + 4 * 60 * 60 * 1000
+      assert.equal(await convertToEur(100, 'USD'), 95)
+      assert.equal(isFxStale('USD'), false)
+    } finally {
+      Date.now = ahora
+    }
+  })
+
+  it('los peniques comparten el aviso de la libra', async () => {
+    const ahora = Date.now
+    try {
+      stubFetch(async () => ({ rate: 1.2 }))
+      await convertToEur(100, 'GBP')
+      Date.now = () => ahora() + 2 * 60 * 60 * 1000
+      globalThis.fetch = (async () => {
+        throw new Error('sin conexión')
+      }) as typeof fetch
+      await convertToEur(1000, 'GBp')
+      assert.equal(isFxStale('GBp'), true)
+    } finally {
+      Date.now = ahora
+    }
   })
 
   it('propaga el error si nunca hubo un tipo que reutilizar', async () => {

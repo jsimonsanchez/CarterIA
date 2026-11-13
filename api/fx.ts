@@ -29,6 +29,8 @@ export default async function handler(request: Request): Promise<Response> {
   try {
     const res = await fetch(
       `https://api.frankfurter.app/${date ?? 'latest'}?from=${encodeURIComponent(from)}&to=EUR`,
+      // Que no se quede colgada: el cliente tiene un tipo guardado de respaldo.
+      { signal: AbortSignal.timeout(5000) },
     )
     if (!res.ok) {
       return Response.json({ error: `frankfurter.app respondió ${res.status}` }, { status: 502 })
